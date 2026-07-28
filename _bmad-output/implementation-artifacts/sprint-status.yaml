@@ -51,7 +51,7 @@ development_status:
   epic-1: in-progress
   1-1-expo-project-initialization-hardware-camera-viewfinder: done
   1-2-native-gyroscope-horizon-leveling-bar: done
-  1-3-mode-switcher-quick-lens-preset-chips: backlog
+  1-3-mode-switcher-quick-lens-preset-chips: done
   epic-1-retrospective: optional
   epic-2: backlog
   2-1-shutter-keyframe-freeze-unfreeze-pipeline: backlog
