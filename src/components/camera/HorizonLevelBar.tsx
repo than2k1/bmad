@@ -3,8 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { DeviceMotion } from 'expo-sensors';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useCameraStore } from '../../stores/useCameraStore';
-
-const LEVEL_THRESHOLD_RAD = (1.0 * Math.PI) / 180; // 1.0 degree in radians
+import { calculateRollDegrees, isWithinLevelThreshold } from '../../utils/levelCalculator';
 
 export const HorizonLevelBar: React.FC = () => {
   const isAppActive = useCameraStore((state) => state.isAppActive);
@@ -12,27 +11,46 @@ export const HorizonLevelBar: React.FC = () => {
 
   // Reanimated shared values on UI thread
   const rollRad = useSharedValue(0);
-  const isLevel = useSharedValue(true);
+  const isLevel = useSharedValue(false);
 
   useEffect(() => {
     if (!isAppActive || !showHorizonBar) {
       return;
     }
 
-    // Set 60Hz update interval (16ms)
-    DeviceMotion.setUpdateInterval(16);
+    let isMounted = true;
+    let subscription: { remove: () => void } | null = null;
 
-    const subscription = DeviceMotion.addListener((motionData) => {
-      if (motionData && motionData.rotation && typeof motionData.rotation.gamma === 'number') {
-        const gamma = motionData.rotation.gamma;
-        // Invert rotation angle so bar stays horizontal relative to horizon
-        rollRad.value = -gamma;
-        isLevel.value = Math.abs(gamma) <= LEVEL_THRESHOLD_RAD;
+    const setupSensor = async () => {
+      try {
+        const isAvailable = await DeviceMotion.isAvailableAsync();
+        if (!isAvailable || !isMounted) {
+          return;
+        }
+
+        // Set 60Hz update interval (16ms)
+        DeviceMotion.setUpdateInterval(16);
+
+        subscription = DeviceMotion.addListener((motionData) => {
+          if (motionData && motionData.rotation) {
+            const rollDegrees = calculateRollDegrees(motionData.rotation);
+            const gammaRad = (rollDegrees * Math.PI) / 180;
+            rollRad.value = -gammaRad;
+            isLevel.value = isWithinLevelThreshold(rollDegrees, 1.0);
+          }
+        });
+      } catch (err) {
+        // Handle hardware sensor unavailablity gracefully
       }
-    });
+    };
+
+    setupSensor();
 
     return () => {
-      subscription.remove();
+      isMounted = false;
+      if (subscription) {
+        subscription.remove();
+      }
     };
   }, [isAppActive, showHorizonBar, rollRad, isLevel]);
 
@@ -60,8 +78,8 @@ export const HorizonLevelBar: React.FC = () => {
 
       {/* Rotating 2D Horizon Level Line */}
       <Animated.View style={[styles.levelLine, animatedStyle]}>
-        <View style={[styles.endTick, styles.leftTick]} />
-        <View style={[styles.endTick, styles.rightTick]} />
+        <Animated.View style={[styles.endTick, styles.leftTick, animatedStyle]} />
+        <Animated.View style={[styles.endTick, styles.rightTick, animatedStyle]} />
       </Animated.View>
     </View>
   );
@@ -91,7 +109,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 2,
     height: 8,
-    backgroundColor: 'inherit',
   },
   leftTick: {
     left: 0,

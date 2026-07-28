@@ -62,6 +62,12 @@ warnings: []
 - Given the horizon level bar is active, when device roll angle is within ±1° of horizontal (0° roll), then the level bar turns green (`#30D158`) to provide instant visual level feedback.
 - Given the app is backgrounded or screen unmounts, when `isAppActive` changes or component unmounts, then `expo-sensors` subscriptions are cleanly removed to prevent thermal throttling and battery drain.
 
+### Review Findings
+- [x] [Review][Patch] React Native invalid style property `backgroundColor: 'inherit'` in HorizonLevelBar endTick [src/components/camera/HorizonLevelBar.tsx:94]
+- [x] [Review][Patch] HorizonLevelBar duplicates roll math inline instead of using levelCalculator.ts helpers [src/components/camera/HorizonLevelBar.tsx:25-31]
+- [x] [Review][Patch] Missing DeviceMotion availability check prior to setting update interval [src/components/camera/HorizonLevelBar.tsx:21]
+- [x] [Review][Patch] isLevel shared value defaults to true before initial motion data is received [src/components/camera/HorizonLevelBar.tsx:15]
+
 ## Spec Change Log
 
 ## Review Triage Log
@@ -69,11 +75,14 @@ warnings: []
 ### 2026-07-28 — Review pass
 - intent_gap: 0
 - bad_spec: 0
-- patch: 0
+- patch: 4
 - defer: 0
 - reject: 0
 - addressed_findings:
-  - none
+  - React Native invalid style property `backgroundColor: 'inherit'` fixed via Animated.View with animatedStyle
+  - Refactored HorizonLevelBar.tsx to use calculateRollDegrees and isWithinLevelThreshold math helpers
+  - Added DeviceMotion.isAvailableAsync() check before subscribing to sensor updates
+  - Set initial isLevel shared value to false to prevent 1-frame green flash on mount
 
 ## Verification
 
