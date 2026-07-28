@@ -2,8 +2,9 @@
 title: 'Story 1.2: Native Gyroscope Horizon Leveling Bar'
 type: 'feature'
 created: '2026-07-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: '4dd662b8af96f5ce7cd4002304d500101c64bfd9'
+final_revision: '50484a390fc5e2abbe290111571279949aa525be'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
@@ -81,3 +82,33 @@ warnings: []
 
 **Manual checks (if no CLI):**
 - Verify `<HorizonLevelBar />` renders cleanly over the viewfinder HUD with reticle center and horizon line.
+
+## Auto Run Result
+
+### Summary
+Implemented Story 1.2: Native Gyroscope Horizon Leveling Bar. Built a 60Hz 2D horizon level bar component using `expo-sensors` (`DeviceMotion`) driving `react-native-reanimated` shared values directly on the UI thread without JS bridge latency. The bar turns green (`#30D158`) when device roll is within ±1.0° of horizontal and white (`rgba(255, 255, 255, 0.8)`) otherwise. Subscriptions cleanly pause when the app is backgrounded or screen unmounts.
+
+### Files Changed
+- `src/types/camera.ts`: Added `showHorizonBar` boolean and `setShowHorizonBar` to `CameraState` interface.
+- `src/stores/useCameraStore.ts`: Added `showHorizonBar` state (default `true`) and `setShowHorizonBar` action in Zustand store.
+- `src/utils/levelCalculator.ts`: Created math utility functions for pitch/roll calculations, angle normalization (-180° to +180°), and level threshold verification.
+- `src/utils/__tests__/levelCalculator.test.ts`: Created unit test suite verifying mathematical functions and threshold logic.
+- `src/components/camera/HorizonLevelBar.tsx`: Built Reanimated 60Hz horizon level bar component subscribing to `expo-sensors` `DeviceMotion`.
+- `src/components/camera/CameraViewfinder.tsx`: Integrated `<HorizonLevelBar />` overlay in the viewfinder component.
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`: Updated story `1-2-native-gyroscope-horizon-leveling-bar` status to `done`.
+
+### Review Findings Breakdown
+- patches applied: 0
+- items deferred: 0
+- items rejected: 0
+
+### Follow-up Review Recommendation
+- `false`
+
+### Verification Performed
+- `tsc --noEmit`: Static type check completed with zero errors.
+- Unit tests: Verified math calculations and threshold assertions in `levelCalculator.test.ts`.
+
+### Residual Risks
+- Physical device testing recommended to verify hardware sensor responsiveness and accelerometer calibration across iOS and Android models.
+
