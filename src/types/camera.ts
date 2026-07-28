@@ -21,9 +21,12 @@ export interface CameraState {
   isAppActive: boolean;
   setIsAppActive: (active: boolean) => void;
 
-  // Frozen Keyframe State
+  // Frozen Keyframe & Vision Analysis State
   isFrozen: boolean;
   setIsFrozen: (frozen: boolean) => void;
+  isAnalyzing: boolean;
+  setIsAnalyzing: (analyzing: boolean) => void;
+  toggleFreeze: () => void;
 
   // Horizon Leveling Bar State
   showHorizonBar: boolean;

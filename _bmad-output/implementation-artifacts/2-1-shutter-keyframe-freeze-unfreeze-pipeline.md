@@ -1,6 +1,10 @@
+---
+baseline_commit: 2958bfd6977c34147fab3fd44491eed3ca068bef
+---
+
 # Story 2.1: Shutter Keyframe Freeze & Unfreeze Pipeline
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -25,22 +29,28 @@ so that the app can analyze the image without motion blur.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Camera Store State Expansion & Unit Tests (AC: #4)
-  - [ ] Update `src/types/camera.ts` to add `isAnalyzing: boolean`, `setIsAnalyzing: (analyzing: boolean) => void`, and `toggleFreeze: () => void`.
-  - [ ] Update `src/stores/useCameraStore.ts` to implement `isAnalyzing` state and `toggleFreeze` action (toggling `isFrozen` and managing `isAnalyzing`).
-  - [ ] Create `src/stores/__tests__/useCameraStore.test.ts` to test store state transitions for freezing, un-freezing, and toggling.
-- [ ] Task 2: Shutter Button Component Implementation (AC: #1, #3)
-  - [ ] Create `src/components/camera/ShutterButton.tsx` with high-contrast shutter button UI (white outer ring, inner circle with amber/cyan highlight when active/frozen).
-  - [ ] Connect `isFrozen`, `isAnalyzing`, and `toggleFreeze` from `useCameraStore`.
-  - [ ] Ensure minimum 44pt touch target diameter (e.g. 72x72pt button size) and accessibility attributes (`accessibilityRole="button"`, `accessibilityLabel`).
-- [ ] Task 3: Analyzing Indicator & Freeze Overlay Component Implementation (AC: #1, #2)
-  - [ ] Create `src/components/camera/AnalyzingIndicator.tsx` rendering a sleek glassmorphic HUD pill ("Analyzing...") with an animated activity spinner or Reanimated pulsing ring when `isFrozen` / `isAnalyzing` is active.
-  - [ ] Add single-tap gesture listener / `Pressable` overlay covering the viewfinder so tapping anywhere on screen un-freezes the camera feed back to live 60 FPS video.
-- [ ] Task 4: Camera Viewfinder Integration & Freeze Control (AC: #1, #2, #4)
-  - [ ] Update `src/components/camera/CameraViewfinder.tsx` to read `isFrozen` and `isAnalyzing` from `useCameraStore`.
-  - [ ] Pass `isActive={isAppActive && !isFrozen}` to `<Camera>` (pausing/freezing native camera stream on keyframe).
-  - [ ] Mount `<ShutterButton />` in bottom HUD container above/alongside `LensPresetChips`.
-  - [ ] Mount `<AnalyzingIndicator />` / Freeze touch listener in HUD overlay canvas when `isFrozen` is true.
+- [x] Task 1: Camera Store State Expansion & Unit Tests (AC: #4)
+  - [x] Update `src/types/camera.ts` to add `isAnalyzing: boolean`, `setIsAnalyzing: (analyzing: boolean) => void`, and `toggleFreeze: () => void`.
+  - [x] Update `src/stores/useCameraStore.ts` to implement `isAnalyzing` state and `toggleFreeze` action (toggling `isFrozen` and managing `isAnalyzing`).
+  - [x] Create `src/stores/__tests__/useCameraStore.test.ts` to test store state transitions for freezing, un-freezing, and toggling.
+- [x] Task 2: Shutter Button Component Implementation (AC: #1, #3)
+  - [x] Create `src/components/camera/ShutterButton.tsx` with high-contrast shutter button UI (white outer ring, inner circle with amber/cyan highlight when active/frozen).
+  - [x] Connect `isFrozen`, `isAnalyzing`, and `toggleFreeze` from `useCameraStore`.
+  - [x] Ensure minimum 44pt touch target diameter (72x72pt button size) and accessibility attributes (`accessibilityRole="button"`, `accessibilityLabel="Analyze and freeze keyframe"`).
+- [x] Task 3: Analyzing Indicator & Freeze Overlay Component Implementation (AC: #1, #2)
+  - [x] Create `src/components/camera/AnalyzingIndicator.tsx` rendering a sleek glassmorphic HUD pill ("Analyzing...") with a Reanimated pulsing ring & activity indicator when `isFrozen` / `isAnalyzing` is active.
+  - [x] Add single-tap gesture listener / `Pressable` overlay covering the viewfinder so tapping anywhere on screen un-freezes the camera feed back to live 60 FPS video.
+- [x] Task 4: Camera Viewfinder Integration & Freeze Control (AC: #1, #2, #4)
+  - [x] Update `src/components/camera/CameraViewfinder.tsx` to read `isFrozen` and `isAnalyzing` from `useCameraStore`.
+  - [x] Pass `isActive={isAppActive && !isFrozen}` to `<Camera>` (pausing/freezing native camera stream on keyframe).
+  - [x] Mount `<ShutterButton />` in bottom HUD container alongside `LensPresetChips`.
+  - [x] Mount `<AnalyzingIndicator />` / Freeze touch listener in HUD overlay canvas when `isFrozen` is true.
+
+### Review Findings
+
+- [x] [Review][Patch] setIsFrozen setter does not update isAnalyzing state [src/stores/useCameraStore.ts:18]
+- [x] [Review][Patch] Reanimated pulseOpacity animation missing cancelAnimation cleanup on unmount [src/components/camera/AnalyzingIndicator.tsx:20]
+- [x] [Review][Patch] Store unit test runner uses CommonJS require.main check [src/stores/__tests__/useCameraStore.test.ts:43]
 
 ## Dev Notes
 
@@ -49,17 +59,16 @@ so that the app can analyze the image without motion blur.
   - **AD-2 (Viewfinder 60 FPS & Keyframe AI Pipeline):** Tapping shutter button freezes preview instantly and triggers `isAnalyzing` HUD state. Pausing `isActive` on keyframe avoids unnecessary continuous frame processing and conserves battery/thermals.
   - **AD-5 (Zustand State):** Extend existing `useCameraStore` with `isAnalyzing` and `toggleFreeze()` helper, keeping transient state centralized without Redux boilerplate.
 - **Existing Codebase Analysis & File Updates:**
-  - `src/types/camera.ts`: Existing `CameraState` contains `isFrozen` and `setIsFrozen`. Add `isAnalyzing: boolean`, `setIsAnalyzing: (analyzing: boolean) => void`, and `toggleFreeze: () => void`.
-  - `src/stores/useCameraStore.ts`: Implement `isAnalyzing` (default `false`) and `toggleFreeze` logic in Zustand store.
-  - `src/components/camera/CameraViewfinder.tsx`: Needs layout update to bind `isActive={isAppActive && !isFrozen}`, mount `<ShutterButton />` in bottom HUD, and mount `<AnalyzingIndicator />` overlay.
+  - `src/types/camera.ts`: Existing `CameraState` contains `isFrozen` and `setIsFrozen`. Added `isAnalyzing: boolean`, `setIsAnalyzing: (analyzing: boolean) => void`, and `toggleFreeze: () => void`.
+  - `src/stores/useCameraStore.ts`: Implemented `isAnalyzing` (default `false`) and `toggleFreeze` logic in Zustand store.
+  - `src/components/camera/CameraViewfinder.tsx`: Updated layout to bind `isActive={isAppActive && !isFrozen}`, mounted `<ShutterButton />` in bottom HUD, and mounted `<AnalyzingIndicator />` overlay.
 - **Code Safety & Edge Cases:**
-  - Handle rapid double-tapping on shutter button by debouncing or checking state in `toggleFreeze`.
-  - When app goes to background while frozen (`isAppActive = false`), ensure `isActive` remains `false`.
-  - Ensure touch targets adhere to mobile design guidelines (minimum 44x44pt touchable area).
-  - Do not use invalid React Native CSS properties like `backgroundColor: 'inherit'` or invalid inline style types.
+  - Handled rapid double-tapping on shutter button cleanly via `toggleFreeze`.
+  - When app goes to background while frozen (`isAppActive = false`), ensured `isCameraActive` remains `false`.
+  - Ensured touch targets adhere to mobile design guidelines (72x72pt touchable area, well above 44x44pt minimum).
 - **Testing Approach:**
-  - Unit tests: `npx tsx src/stores/__tests__/useCameraStore.test.ts` or Jest.
-  - Typecheck: `npx tsc --noEmit`.
+  - Unit tests: Created `src/stores/__tests__/useCameraStore.test.ts` testing store state transitions for freezing, un-freezing, and toggling.
+  - Verification: Executed `npx tsc --noEmit` and `npx tsx` unit test suite (100% pass).
 
 ### Project Structure Notes
 
@@ -92,6 +101,13 @@ Gemini 3.6 Flash (High)
 ### Completion Notes List
 
 - Story file generated by `bmad-create-story` workflow.
+- Expanded `CameraState` in `src/types/camera.ts` with `isAnalyzing` and `toggleFreeze`.
+- Extended Zustand store `src/stores/useCameraStore.ts` with state and toggle logic.
+- Created `src/components/camera/ShutterButton.tsx` with high-contrast outer ring / inner circle UI and accessibility tags.
+- Created `src/components/camera/AnalyzingIndicator.tsx` with Reanimated pulsing HUD pill and full-screen unfreeze tap overlay.
+- Integrated `isFrozen`, `isAnalyzing`, `<ShutterButton />`, and `<AnalyzingIndicator />` into `src/components/camera/CameraViewfinder.tsx`.
+- Created comprehensive store unit tests in `src/stores/__tests__/useCameraStore.test.ts`.
+- Verified TypeScript compilation (`npx tsc --noEmit`) and all unit tests passed with 0 errors.
 
 ### File List
 
@@ -101,3 +117,7 @@ Gemini 3.6 Flash (High)
 - `src/components/camera/AnalyzingIndicator.tsx`
 - `src/components/camera/CameraViewfinder.tsx`
 - `src/stores/__tests__/useCameraStore.test.ts`
+
+### Change Log
+
+- 2026-07-28: Implemented Shutter Keyframe Freeze & Unfreeze Pipeline (Story 2.1). Added store expansion, ShutterButton, AnalyzingIndicator, viewfinder integration, and unit tests. All tests passing. Status updated to review.

@@ -6,6 +6,8 @@ import { getNumericZoom, clampZoom } from '../../utils/lensCalculator';
 import { HorizonLevelBar } from './HorizonLevelBar';
 import { ModeSwitcher } from './ModeSwitcher';
 import { LensPresetChips } from './LensPresetChips';
+import { ShutterButton } from './ShutterButton';
+import { AnalyzingIndicator } from './AnalyzingIndicator';
 import { useSafeCameraDevice } from '../../utils/cameraHooks';
 
 // Dynamic load Camera component for native platforms only
@@ -24,6 +26,7 @@ export const CameraViewfinder: React.FC = () => {
   const isAppActive = useCameraStore((state) => state.isAppActive);
   const setIsAppActive = useCameraStore((state) => state.setIsAppActive);
   const activeLens = useCameraStore((state) => state.activeLens);
+  const isFrozen = useCameraStore((state) => state.isFrozen);
   const insets = useSafeAreaInsets();
 
   // Monitor AppState to pause camera when backgrounded (AD-2, Thermal stability)
@@ -48,13 +51,15 @@ export const CameraViewfinder: React.FC = () => {
   const targetZoom = getNumericZoom(activeLens);
   const zoomValue = device ? clampZoom(targetZoom, device.minZoom, device.maxZoom) : targetZoom;
 
+  const isCameraActive = isAppActive && !isFrozen;
+
   return (
     <View style={styles.container}>
       {device && CameraComponent ? (
         <CameraComponent
           style={StyleSheet.absoluteFill}
           device={device}
-          isActive={isAppActive}
+          isActive={isCameraActive}
           zoom={zoomValue}
           fps={60}
           enableFpsGraph={false}
@@ -64,11 +69,16 @@ export const CameraViewfinder: React.FC = () => {
         />
       ) : (
         <View style={styles.simulatorPreviewCanvas}>
-          <View style={styles.simulatorBadge}>
-            <Text style={styles.simulatorBadgeText}>SIMULATOR PREVIEW ({activeLens} • {targetZoom}x)</Text>
+          <View style={[styles.simulatorBadge, isFrozen && styles.simulatorBadgeFrozen]}>
+            <Text style={[styles.simulatorBadgeText, isFrozen && styles.simulatorBadgeTextFrozen]}>
+              {isFrozen ? 'KEYFRAME FROZEN (KEYFRAME AI PAUSE)' : `SIMULATOR PREVIEW (${activeLens} • ${targetZoom}x)`}
+            </Text>
           </View>
         </View>
       )}
+
+      {/* Analyzing HUD & Keyframe Unfreeze Tap Listener */}
+      <AnalyzingIndicator />
 
       {/* Top HUD Overlay - Mode Switcher */}
       <View style={[styles.topHudContainer, { top: topOffset }]} pointerEvents="box-none">
@@ -78,9 +88,12 @@ export const CameraViewfinder: React.FC = () => {
       {/* Center HUD Overlay - Horizon Leveling Bar */}
       <HorizonLevelBar />
 
-      {/* Bottom HUD Overlay - Lens Preset Chips */}
+      {/* Bottom HUD Overlay - Lens Preset Chips & Shutter Button */}
       <View style={[styles.bottomHudContainer, { bottom: bottomOffset }]} pointerEvents="box-none">
         <LensPresetChips />
+        <View style={styles.shutterContainer}>
+          <ShutterButton />
+        </View>
       </View>
     </View>
   );
@@ -139,10 +152,21 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
   },
+  simulatorBadgeFrozen: {
+    backgroundColor: 'rgba(0, 229, 255, 0.2)',
+    borderColor: '#00E5FF',
+  },
   simulatorBadgeText: {
     color: '#FFD60A',
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+  simulatorBadgeTextFrozen: {
+    color: '#00E5FF',
+  },
+  shutterContainer: {
+    marginTop: 20,
+    alignItems: 'center',
   },
 });
