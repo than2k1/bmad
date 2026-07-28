@@ -9,21 +9,32 @@ interface CameraPermissionScreenProps {
 
 export const CameraPermissionScreen: React.FC<CameraPermissionScreenProps> = ({ onPermissionGranted }) => {
   const { hasPermission, requestPermission } = useCameraPermission();
+  const permissionStatus = useCameraStore((state) => state.permissionStatus);
   const setPermissionStatus = useCameraStore((state) => state.setPermissionStatus);
 
   const handleRequestPermission = async () => {
-    const isGranted = await requestPermission();
-    if (isGranted) {
-      setPermissionStatus('granted');
-      onPermissionGranted?.();
-    } else {
+    try {
+      const isGranted = await requestPermission();
+      if (isGranted) {
+        setPermissionStatus('granted');
+        onPermissionGranted?.();
+      } else {
+        setPermissionStatus('denied');
+      }
+    } catch {
       setPermissionStatus('denied');
     }
   };
 
-  const handleOpenSettings = () => {
-    Linking.openSettings();
+  const handleOpenSettings = async () => {
+    try {
+      await Linking.openSettings();
+    } catch {
+      // Fallback if openSettings fails
+    }
   };
+
+  const isDenied = permissionStatus === 'denied' || permissionStatus === 'restricted';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -35,11 +46,13 @@ export const CameraPermissionScreen: React.FC<CameraPermissionScreenProps> = ({ 
         <Text style={styles.title}>Camera Access Required</Text>
         
         <Text style={styles.description}>
-          PoseCam needs access to your camera to display the live 60 FPS viewfinder and provide real-time AI pose framing guidance.
+          {isDenied 
+            ? 'Camera permission has been denied. Please open system settings to enable camera access for PoseCam.' 
+            : 'PoseCam needs access to your camera to display the live 60 FPS viewfinder and provide real-time AI pose framing guidance.'}
         </Text>
 
         <View style={styles.buttonContainer}>
-          {!hasPermission ? (
+          {!hasPermission && !isDenied ? (
             <TouchableOpacity 
               style={styles.primaryButton} 
               onPress={handleRequestPermission}
@@ -50,11 +63,11 @@ export const CameraPermissionScreen: React.FC<CameraPermissionScreenProps> = ({ 
           ) : null}
 
           <TouchableOpacity 
-            style={styles.secondaryButton} 
+            style={isDenied ? styles.primaryButton : styles.secondaryButton} 
             onPress={handleOpenSettings}
             activeOpacity={0.8}
           >
-            <Text style={styles.secondaryButtonText}>Open System Settings</Text>
+            <Text style={isDenied ? styles.primaryButtonText : styles.secondaryButtonText}>Open System Settings</Text>
           </TouchableOpacity>
         </View>
 

@@ -8,21 +8,16 @@ import { CameraViewfinder } from '../components/camera/CameraViewfinder';
 
 export default function MainApp() {
   const { hasPermission } = useCameraPermission();
-  const permissionStatus = useCameraStore((state) => state.permissionStatus);
   const setPermissionStatus = useCameraStore((state) => state.setPermissionStatus);
 
   useEffect(() => {
-    if (hasPermission) {
-      setPermissionStatus('granted');
-    }
+    setPermissionStatus(hasPermission ? 'granted' : 'not-determined');
   }, [hasPermission, setPermissionStatus]);
-
-  const isGranted = hasPermission || permissionStatus === 'granted';
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      {isGranted ? (
+      {hasPermission ? (
         <CameraViewfinder />
       ) : (
         <CameraPermissionScreen onPermissionGranted={() => setPermissionStatus('granted')} />

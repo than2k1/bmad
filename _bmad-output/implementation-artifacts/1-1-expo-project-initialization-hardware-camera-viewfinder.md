@@ -44,6 +44,18 @@ so that I can frame my shots smoothly without lag.
   - [x] Connect `CameraPermissionScreen` and `CameraViewfinder` in main screen layout (`src/app/index.tsx` or `App.tsx`).
   - [x] Verify permission grant flow and live preview rendering.
 
+### Review Findings
+
+- [x] [Review][Patch] Missing `expo-router` dependency in `package.json` [package.json:4]
+- [x] [Review][Patch] 60 FPS hardware camera preview rate is not explicitly configured [src/components/camera/CameraViewfinder.tsx:33-41]
+- [x] [Review][Patch] Permission request error handling & redundant prompt when permission denied [src/components/camera/CameraPermissionScreen.tsx:14-22,42-50]
+- [x] [Review][Patch] `isGranted` check in `MainApp` permits mounting viewfinder on stale store state [src/app/index.tsx:20]
+- [x] [Review][Patch] Initial `AppState.currentState` check missing in `CameraViewfinder` [src/components/camera/CameraViewfinder.tsx:12-21]
+- [x] [Review][Patch] `Linking.openSettings()` promise not caught [src/components/camera/CameraPermissionScreen.tsx:24-26]
+- [x] [Review][Patch] Simulator/No-Camera device fallback is non-interactive [src/components/camera/CameraViewfinder.tsx:23-29]
+
+
+
 ## Dev Notes
 
 - **Architecture Invariants:**

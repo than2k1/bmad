@@ -10,6 +10,9 @@ export const CameraViewfinder: React.FC = () => {
 
   // Monitor AppState to pause camera when backgrounded (AD-2, Thermal stability)
   useEffect(() => {
+    // Initial sync on mount
+    setIsAppActive(AppState.currentState === 'active');
+
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       const active = nextAppState === 'active';
       setIsAppActive(active);
@@ -23,7 +26,10 @@ export const CameraViewfinder: React.FC = () => {
   if (device == null) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Initializing Camera Device...</Text>
+        <Text style={styles.loadingTitle}>Camera Unavailable</Text>
+        <Text style={styles.loadingText}>
+          No back camera device found. Please test on a physical iOS or Android device.
+        </Text>
       </View>
     );
   }
@@ -34,6 +40,7 @@ export const CameraViewfinder: React.FC = () => {
         style={StyleSheet.absoluteFill}
         device={device}
         isActive={isAppActive}
+        fps={60}
         enableFpsGraph={false}
         lowLightBoost={true}
         photo={true}
@@ -53,10 +60,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F0F11',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  loadingTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
   },
   loadingText: {
     color: '#8E8E93',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
+
