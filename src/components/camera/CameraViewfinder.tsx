@@ -1,15 +1,26 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, AppState, AppStateStatus } from 'react-native';
-import { Camera, useCameraDevice } from 'react-native-vision-camera';
+import { StyleSheet, View, Text, AppState, AppStateStatus, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCameraStore } from '../../stores/useCameraStore';
 import { getNumericZoom, clampZoom } from '../../utils/lensCalculator';
 import { HorizonLevelBar } from './HorizonLevelBar';
 import { ModeSwitcher } from './ModeSwitcher';
 import { LensPresetChips } from './LensPresetChips';
+import { useSafeCameraDevice } from '../../utils/cameraHooks';
+
+// Dynamic load Camera component for native platforms only
+let CameraComponent: any = null;
+if (Platform.OS !== 'web') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    CameraComponent = require('react-native-vision-camera').Camera;
+  } catch {
+    CameraComponent = null;
+  }
+}
 
 export const CameraViewfinder: React.FC = () => {
-  const device = useCameraDevice('back');
+  const device = useSafeCameraDevice('back');
   const isAppActive = useCameraStore((state) => state.isAppActive);
   const setIsAppActive = useCameraStore((state) => state.setIsAppActive);
   const activeLens = useCameraStore((state) => state.activeLens);
@@ -30,38 +41,34 @@ export const CameraViewfinder: React.FC = () => {
     };
   }, [setIsAppActive]);
 
-  if (device == null) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingTitle}>Camera Unavailable</Text>
-        <Text style={styles.loadingText}>
-          No back camera device found. Please test on a physical iOS or Android device.
-        </Text>
-      </View>
-    );
-  }
-
-  // Safely clamp zoom based on active lens preset and hardware device capabilities (AC #4)
-  const targetZoom = getNumericZoom(activeLens);
-  const zoomValue = clampZoom(targetZoom, device.minZoom, device.maxZoom);
-
   // Dynamic safe area positioning with fallbacks
   const topOffset = Math.max(insets.top + 10, 54);
   const bottomOffset = Math.max(insets.bottom + 16, 40);
 
+  const targetZoom = getNumericZoom(activeLens);
+  const zoomValue = device ? clampZoom(targetZoom, device.minZoom, device.maxZoom) : targetZoom;
+
   return (
     <View style={styles.container}>
-      <Camera
-        style={StyleSheet.absoluteFill}
-        device={device}
-        isActive={isAppActive}
-        zoom={zoomValue}
-        fps={60}
-        enableFpsGraph={false}
-        lowLightBoost={true}
-        photo={true}
-        video={false}
-      />
+      {device && CameraComponent ? (
+        <CameraComponent
+          style={StyleSheet.absoluteFill}
+          device={device}
+          isActive={isAppActive}
+          zoom={zoomValue}
+          fps={60}
+          enableFpsGraph={false}
+          lowLightBoost={true}
+          photo={true}
+          video={false}
+        />
+      ) : (
+        <View style={styles.simulatorPreviewCanvas}>
+          <View style={styles.simulatorBadge}>
+            <Text style={styles.simulatorBadgeText}>SIMULATOR PREVIEW ({activeLens} • {targetZoom}x)</Text>
+          </View>
+        </View>
+      )}
 
       {/* Top HUD Overlay - Mode Switcher */}
       <View style={[styles.topHudContainer, { top: topOffset }]} pointerEvents="box-none">
@@ -117,5 +124,25 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 20,
     alignItems: 'center',
+  },
+  simulatorPreviewCanvas: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#121214',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  simulatorBadge: {
+    backgroundColor: 'rgba(255, 214, 10, 0.2)',
+    borderColor: '#FFD60A',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  simulatorBadgeText: {
+    color: '#FFD60A',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

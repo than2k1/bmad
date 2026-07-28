@@ -48,14 +48,28 @@ tracking_system: file-system
 story_location: "{project-root}/_bmad-output/implementation-artifacts"
 
 development_status:
-  epic-1: in-progress
+  epic-1: done
   1-1-expo-project-initialization-hardware-camera-viewfinder: done
   1-2-native-gyroscope-horizon-leveling-bar: done
   1-3-mode-switcher-quick-lens-preset-chips: done
-  epic-1-retrospective: optional
-  epic-2: backlog
-  2-1-shutter-keyframe-freeze-unfreeze-pipeline: backlog
+  epic-1-retrospective: done
+  epic-2: in-progress
+  2-1-shutter-keyframe-freeze-unfreeze-pipeline: ready-for-dev
   2-2-local-on-device-vision-inferencing-engine: backlog
+
+action_items:
+  - epic: 1
+    action: "Maintain cross-platform web simulator fallbacks for previewing vision HUD components during development"
+    owner: "Charlie"
+    status: open
+  - epic: 1
+    action: "Ensure all new sensor and math utility modules include automated unit tests before story completion"
+    owner: "Dana"
+    status: open
+  - epic: 1
+    action: "Verify local model file loading and thread isolation for Epic 2 vision engine (<200ms latency requirement)"
+    owner: "Amelia"
+    status: open
   epic-2-retrospective: optional
   epic-3: backlog
   3-1-manual-framing-selector-contextual-pose-filtering: backlog

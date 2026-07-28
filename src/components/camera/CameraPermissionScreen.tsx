@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Linking, SafeAreaView } from 'react-native';
-import { useCameraPermission } from 'react-native-vision-camera';
+import { useSafeCameraPermission } from '../../utils/cameraHooks';
 import { useCameraStore } from '../../stores/useCameraStore';
 
 interface CameraPermissionScreenProps {
@@ -8,7 +8,7 @@ interface CameraPermissionScreenProps {
 }
 
 export const CameraPermissionScreen: React.FC<CameraPermissionScreenProps> = ({ onPermissionGranted }) => {
-  const { hasPermission, requestPermission } = useCameraPermission();
+  const { hasPermission, requestPermission } = useSafeCameraPermission();
   const permissionStatus = useCameraStore((state) => state.permissionStatus);
   const setPermissionStatus = useCameraStore((state) => state.setPermissionStatus);
 

@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useCameraPermission } from 'react-native-vision-camera';
+import { useSafeCameraPermission } from '../utils/cameraHooks';
 import { useCameraStore } from '../stores/useCameraStore';
 import { CameraPermissionScreen } from '../components/camera/CameraPermissionScreen';
 import { CameraViewfinder } from '../components/camera/CameraViewfinder';
 
 export default function MainApp() {
-  const { hasPermission } = useCameraPermission();
+  const { hasPermission } = useSafeCameraPermission();
   const setPermissionStatus = useCameraStore((state) => state.setPermissionStatus);
 
   useEffect(() => {

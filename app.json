@@ -33,6 +33,9 @@
           "cameraPermissionText": "Camera access is required for real-time viewfinder framing and AI pose suggestions."
         }
       ]
-    ]
+    ],
+    "web": {
+      "bundler": "metro"
+    }
   }
 }
