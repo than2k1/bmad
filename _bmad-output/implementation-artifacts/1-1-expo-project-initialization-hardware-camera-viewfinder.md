@@ -1,6 +1,8 @@
 ---
-status: in-review
+status: done
 baseline_revision: 9cf2900fcd9c8dff0b36ed9c951645eef1d38233
+final_revision: e1e554e64271053a8d6f5fb745a4f99ebf00193b
+followup_review_recommended: false
 ---
 
 # Story 1.1: Expo Project Initialization & Hardware Camera Viewfinder
