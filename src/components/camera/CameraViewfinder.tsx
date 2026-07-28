@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { StyleSheet, View, Text, AppState, AppStateStatus } from 'react-native';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
 import { useCameraStore } from '../../stores/useCameraStore';
+import { HorizonLevelBar } from './HorizonLevelBar';
 
 export const CameraViewfinder: React.FC = () => {
   const device = useCameraDevice('back');
@@ -46,6 +47,7 @@ export const CameraViewfinder: React.FC = () => {
         photo={true}
         video={false}
       />
+      <HorizonLevelBar />
     </View>
   );
 };

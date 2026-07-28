@@ -16,4 +16,7 @@ export const useCameraStore = create<CameraState>((set) => ({
 
   isFrozen: false,
   setIsFrozen: (frozen: boolean) => set({ isFrozen: frozen }),
+
+  showHorizonBar: true,
+  setShowHorizonBar: (show: boolean) => set({ showHorizonBar: show }),
 }));

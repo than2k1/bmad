@@ -24,4 +24,8 @@ export interface CameraState {
   // Frozen Keyframe State
   isFrozen: boolean;
   setIsFrozen: (frozen: boolean) => void;
+
+  // Horizon Leveling Bar State
+  showHorizonBar: boolean;
+  setShowHorizonBar: (show: boolean) => void;
 }
