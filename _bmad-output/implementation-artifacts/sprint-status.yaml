@@ -67,6 +67,11 @@ development_status:
   4-2-1-tap-lens-recommendation-exposure-alerts: backlog
   4-3-scene-mode-composition-grid-overlays: backlog
   epic-4-retrospective: optional
+  epic-5: backlog
+  5-1-background-line-bounding-box-spatial-layout-extractor: backlog
+  5-2-mode-driven-composition-rule-evaluator-engine: backlog
+  5-3-viewfinder-directional-cues-target-visual-overlay: backlog
+  epic-5-retrospective: optional
 
 action_items:
   - epic: 1
