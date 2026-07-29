@@ -56,23 +56,9 @@ development_status:
   epic-2: done
   2-1-shutter-keyframe-freeze-unfreeze-pipeline: done
   2-2-local-on-device-vision-inferencing-engine: done
-
-action_items:
-  - epic: 1
-    action: "Maintain cross-platform web simulator fallbacks for previewing vision HUD components during development"
-    owner: "Charlie"
-    status: open
-  - epic: 1
-    action: "Ensure all new sensor and math utility modules include automated unit tests before story completion"
-    owner: "Dana"
-    status: open
-  - epic: 1
-    action: "Verify local model file loading and thread isolation for Epic 2 vision engine (<200ms latency requirement)"
-    owner: "Amelia"
-    status: open
-  epic-2-retrospective: optional
-  epic-3: backlog
-  3-1-manual-framing-selector-contextual-pose-filtering: backlog
+  epic-2-retrospective: done
+  epic-3: in-progress
+  3-1-manual-framing-selector-contextual-pose-filtering: ready-for-dev
   3-2-coco-17-vector-pose-overlay-renderer: backlog
   3-3-photographer-director-cues-alignment-feedback: backlog
   epic-3-retrospective: optional
@@ -81,3 +67,29 @@ action_items:
   4-2-1-tap-lens-recommendation-exposure-alerts: backlog
   4-3-scene-mode-composition-grid-overlays: backlog
   epic-4-retrospective: optional
+
+action_items:
+  - epic: 1
+    action: "Maintain cross-platform web simulator fallbacks for previewing vision HUD components during development"
+    owner: "Charlie"
+    status: done
+  - epic: 1
+    action: "Ensure all new sensor and math utility modules include automated unit tests before story completion"
+    owner: "Dana"
+    status: done
+  - epic: 1
+    action: "Verify local model file loading and thread isolation for Epic 2 vision engine (<200ms latency requirement)"
+    owner: "Amelia"
+    status: done
+  - epic: 2
+    action: "Create COCO-17 pose template catalog covering Headshot, Half-Body, and Full-Body poses for Solo, Couple, and Group subjects"
+    owner: "Amelia"
+    status: open
+  - epic: 2
+    action: "Implement poseFilter utility to filter pose templates contextually by framing crop and detected subject count"
+    owner: "Charlie"
+    status: open
+  - epic: 2
+    action: "Ensure react-native-svg vector renderer smoothly scales keypoints to match camera canvas aspect ratio"
+    owner: "Dana"
+    status: open

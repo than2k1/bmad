@@ -71,6 +71,9 @@ warnings: []
 ### Review Findings
 - [x] [Review][Patch] Prevent race condition in in-flight vision inferencing promise on rapid freeze/un-freeze toggle [`src/components/camera/CameraViewfinder.tsx`:L51-L73]
 - [x] [Review][Patch] Fix zIndex and touch pass-through collision between AnalyzingIndicator overlay and HUD controls [`src/components/camera/AnalyzingIndicator.tsx`:L85-L91]
+- [x] [Review][Patch] Wrap analyzeKeyframe() call in try/catch in CameraViewfinder.tsx to prevent stuck isAnalyzing on sync exception [`src/components/camera/CameraViewfinder.tsx`:L56]
+- [x] [Review][Patch] Fix zIndex and touch pass-through collision between AnalyzingIndicator overlay and HUD controls [`src/components/camera/AnalyzingIndicator.tsx`:L85-L91]
+- [x] [Review][Patch] Fix spec triage log counter inconsistency (reject count 2 -> 0) [`_bmad-output/implementation-artifacts/spec-2-2-local-on-device-vision-inferencing-engine.md`:L84]
 
 ## Spec Change Log
 
@@ -81,7 +84,7 @@ warnings: []
 - bad_spec: 0
 - patch: 2
 - defer: 0
-- reject: 2
+- reject: 0
 - addressed_findings:
   - Addressed race condition check on in-flight analyzeKeyframe promise
   - Adjusted AnalyzingIndicator overlay zIndex to 15
