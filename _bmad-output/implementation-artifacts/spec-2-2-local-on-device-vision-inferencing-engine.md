@@ -66,6 +66,12 @@ warnings: []
 - Given `useCameraStore` manages state, when keyframe inferencing completes, then `visionResult` and `inferenceLatencyMs` update in Zustand store, `isAnalyzing` becomes `false`, and `isFrozen` remains `true`.
 - Given keyframe is un-frozen, when un-freeze occurs, then `visionResult` and `inferenceLatencyMs` are reset (`null`) in `useCameraStore`.
 
+## Tasks & Acceptance
+
+### Review Findings
+- [x] [Review][Patch] Prevent race condition in in-flight vision inferencing promise on rapid freeze/un-freeze toggle [`src/components/camera/CameraViewfinder.tsx`:L51-L73]
+- [x] [Review][Patch] Fix zIndex and touch pass-through collision between AnalyzingIndicator overlay and HUD controls [`src/components/camera/AnalyzingIndicator.tsx`:L85-L91]
+
 ## Spec Change Log
 
 ## Review Triage Log
@@ -73,11 +79,12 @@ warnings: []
 ### 2026-07-29 — Review pass
 - intent_gap: 0
 - bad_spec: 0
-- patch: 0
+- patch: 2
 - defer: 0
-- reject: 0
+- reject: 2
 - addressed_findings:
-  - none
+  - Addressed race condition check on in-flight analyzeKeyframe promise
+  - Adjusted AnalyzingIndicator overlay zIndex to 15
 
 ## Design Notes
 

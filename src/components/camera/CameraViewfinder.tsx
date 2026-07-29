@@ -55,16 +55,19 @@ export const CameraViewfinder: React.FC = () => {
       setIsAnalyzing(true);
       analyzeKeyframe()
         .then((outcome) => {
+          // Verify effect has not been cleaned up and store is still in frozen state
           if (!isCancelled && useCameraStore.getState().isFrozen) {
             setVisionResult(outcome.result, outcome.latencyMs);
             setIsAnalyzing(false);
           }
         })
         .catch(() => {
-          if (!isCancelled) {
+          if (!isCancelled && useCameraStore.getState().isFrozen) {
             setIsAnalyzing(false);
           }
         });
+    } else {
+      setIsAnalyzing(false);
     }
 
     return () => {
