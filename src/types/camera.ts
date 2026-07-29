@@ -1,3 +1,5 @@
+import { KeyframeVisionResult } from './vision';
+
 export type AppMode = 'person' | 'scene';
 
 export type CameraPermissionStatus = 'granted' | 'denied' | 'not-determined' | 'restricted';
@@ -27,6 +29,12 @@ export interface CameraState {
   isAnalyzing: boolean;
   setIsAnalyzing: (analyzing: boolean) => void;
   toggleFreeze: () => void;
+
+  // Vision Inferencing Results & Latency
+  visionResult: KeyframeVisionResult | null;
+  inferenceLatencyMs: number | null;
+  setVisionResult: (result: KeyframeVisionResult | null, latencyMs?: number | null) => void;
+  clearVisionResult: () => void;
 
   // Horizon Leveling Bar State
   showHorizonBar: boolean;

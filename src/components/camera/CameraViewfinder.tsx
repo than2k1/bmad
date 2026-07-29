@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, AppState, AppStateStatus, Platform } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCameraStore } from '../../stores/useCameraStore';
 import { getNumericZoom, clampZoom } from '../../utils/lensCalculator';
+import { analyzeKeyframe } from '../../utils/visionInferencingEngine';
 import { HorizonLevelBar } from './HorizonLevelBar';
 import { ModeSwitcher } from './ModeSwitcher';
 import { LensPresetChips } from './LensPresetChips';
@@ -27,6 +28,8 @@ export const CameraViewfinder: React.FC = () => {
   const setIsAppActive = useCameraStore((state) => state.setIsAppActive);
   const activeLens = useCameraStore((state) => state.activeLens);
   const isFrozen = useCameraStore((state) => state.isFrozen);
+  const setVisionResult = useCameraStore((state) => state.setVisionResult);
+  const setIsAnalyzing = useCameraStore((state) => state.setIsAnalyzing);
   const insets = useSafeAreaInsets();
 
   // Monitor AppState to pause camera when backgrounded (AD-2, Thermal stability)
@@ -43,6 +46,31 @@ export const CameraViewfinder: React.FC = () => {
       subscription.remove();
     };
   }, [setIsAppActive]);
+
+  // Trigger keyframe local AI inferencing upon viewfinder freeze
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (isFrozen) {
+      setIsAnalyzing(true);
+      analyzeKeyframe()
+        .then((outcome) => {
+          if (!isCancelled && useCameraStore.getState().isFrozen) {
+            setVisionResult(outcome.result, outcome.latencyMs);
+            setIsAnalyzing(false);
+          }
+        })
+        .catch(() => {
+          if (!isCancelled) {
+            setIsAnalyzing(false);
+          }
+        });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isFrozen, setIsAnalyzing, setVisionResult]);
 
   // Dynamic safe area positioning with fallbacks
   const topOffset = Math.max(insets.top + 10, 54);
