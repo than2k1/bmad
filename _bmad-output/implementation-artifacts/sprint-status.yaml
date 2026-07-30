@@ -110,3 +110,7 @@ action_items:
     action: "Implement distance & height/tilt math utility routines for bounding box comparison ahead of Story 4.1"
     owner: "Dana"
     status: open
+  - epic: 3
+    action: "Implement spatial proximity clustering in visionInferencingEngine.ts and refactor KeyframeVisionResult to support multi-subject keypoint arrays (subjects: COCO17Keypoints[]) for couple/group pose overlays"
+    owner: "Charlie"
+    status: open
