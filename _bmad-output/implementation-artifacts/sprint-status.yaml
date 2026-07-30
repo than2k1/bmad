@@ -61,7 +61,7 @@ development_status:
   3-1-manual-framing-selector-contextual-pose-filtering: done
   3-2-coco-17-vector-pose-overlay-renderer: done
   3-3-photographer-director-cues-alignment-feedback: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
   epic-4: backlog
   4-1-directional-distance-height-tilt-badges: backlog
   4-2-1-tap-lens-recommendation-exposure-alerts: backlog
@@ -89,12 +89,24 @@ action_items:
   - epic: 2
     action: "Create COCO-17 pose template catalog covering Headshot, Half-Body, and Full-Body poses for Solo, Couple, and Group subjects"
     owner: "Amelia"
-    status: open
+    status: done
   - epic: 2
     action: "Implement poseFilter utility to filter pose templates contextually by framing crop and detected subject count"
     owner: "Charlie"
-    status: open
+    status: done
   - epic: 2
     action: "Ensure react-native-svg vector renderer smoothly scales keypoints to match camera canvas aspect ratio"
+    owner: "Dana"
+    status: done
+  - epic: 3
+    action: "Expand built-in COCO-17 pose catalog in poseCatalog.ts with 30+ diverse templates (sitting, leaning, 3/4 turn, fashion, couple, group)"
+    owner: "Amelia"
+    status: done
+  - epic: 3
+    action: "Build offline AI pose extraction CLI tool (scripts/extract-pose.ts) to convert sample reference photos into normalized PoseTemplate JSON objects"
+    owner: "Charlie"
+    status: done
+  - epic: 3
+    action: "Implement distance & height/tilt math utility routines for bounding box comparison ahead of Story 4.1"
     owner: "Dana"
     status: open
