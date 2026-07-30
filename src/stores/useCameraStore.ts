@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { CameraState, AppMode, CameraPermissionStatus, LensPreset } from '../types/camera';
 import { KeyframeVisionResult } from '../types/vision';
+import { FramingCrop } from '../types/pose';
 
 export const useCameraStore = create<CameraState>((set) => ({
   mode: 'person',
@@ -44,4 +45,10 @@ export const useCameraStore = create<CameraState>((set) => ({
 
   showHorizonBar: true,
   setShowHorizonBar: (show: boolean) => set({ showHorizonBar: show }),
+
+  selectedFraming: 'half_body',
+  setSelectedFraming: (framing: FramingCrop) => set({ selectedFraming: framing, selectedPoseId: null }),
+
+  selectedPoseId: null,
+  setSelectedPoseId: (id: string | null) => set({ selectedPoseId: id }),
 }));

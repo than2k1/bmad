@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-28
-last_updated: 2026-07-29
+last_updated: 2026-07-30
 project: bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -57,10 +57,10 @@ development_status:
   2-1-shutter-keyframe-freeze-unfreeze-pipeline: done
   2-2-local-on-device-vision-inferencing-engine: done
   epic-2-retrospective: done
-  epic-3: in-progress
-  3-1-manual-framing-selector-contextual-pose-filtering: ready-for-dev
-  3-2-coco-17-vector-pose-overlay-renderer: backlog
-  3-3-photographer-director-cues-alignment-feedback: backlog
+  epic-3: done
+  3-1-manual-framing-selector-contextual-pose-filtering: done
+  3-2-coco-17-vector-pose-overlay-renderer: done
+  3-3-photographer-director-cues-alignment-feedback: done
   epic-3-retrospective: optional
   epic-4: backlog
   4-1-directional-distance-height-tilt-badges: backlog

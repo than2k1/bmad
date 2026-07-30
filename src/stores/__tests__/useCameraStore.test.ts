@@ -15,6 +15,32 @@ export function runCameraStoreTests() {
   assert(store.isAnalyzing === false, 'isAnalyzing initial value should be false');
   assert(store.visionResult === null, 'visionResult initial value should be null');
   assert(store.inferenceLatencyMs === null, 'inferenceLatencyMs initial value should be null');
+  assert(store.selectedFraming === 'half_body', 'selectedFraming default value should be half_body');
+  assert(store.selectedPoseId === null, 'selectedPoseId default value should be null');
+
+  // Test framing crop updates
+  store.setSelectedFraming('headshot');
+  assert(useCameraStore.getState().selectedFraming === 'headshot', 'setSelectedFraming(headshot) failed');
+  store.setSelectedFraming('full_body');
+  assert(useCameraStore.getState().selectedFraming === 'full_body', 'setSelectedFraming(full_body) failed');
+  store.setSelectedFraming('half_body');
+
+  // Test active pose selection
+  store.setSelectedPoseId('half-body-solo-arms-crossed');
+  assert(useCameraStore.getState().selectedPoseId === 'half-body-solo-arms-crossed', 'setSelectedPoseId failed');
+
+  // Changing framing should reset selectedPoseId to null
+  store.setSelectedFraming('headshot');
+  assert(useCameraStore.getState().selectedPoseId === null, 'setSelectedFraming should reset selectedPoseId to null');
+
+  store.setSelectedPoseId(null);
+  assert(useCameraStore.getState().selectedPoseId === null, 'setSelectedPoseId(null) failed');
+
+  // Test mode switching does not corrupt framing state
+  store.setSelectedFraming('headshot');
+  store.setMode('scene');
+  assert(useCameraStore.getState().selectedFraming === 'headshot', 'selectedFraming should persist across mode switches');
+  store.setMode('person');
 
   // Test setIsAnalyzing
   store.setIsAnalyzing(true);

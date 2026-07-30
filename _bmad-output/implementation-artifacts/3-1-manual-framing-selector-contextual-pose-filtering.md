@@ -1,6 +1,9 @@
+---
+baseline_commit: 4a3b95e4748658bd555b27b352c7f1d7e651de91
+---
 # Story 3.1: Manual Framing Selector & Contextual Pose Filtering
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -25,24 +28,32 @@ so that the pose carousel displays templates that match my intended photo framin
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Pose & Framing Data Contracts & Catalog Definition (AC: #1, #2, #3)
-  - [ ] Create `src/types/pose.ts` defining `FramingCrop` (`'headshot'` | `'half_body'` | `'full_body'`), `PoseTemplate` interface conforming to `PoseTemplate.json` schema (`ARCHITECTURE-SPINE.md` section 3.1), and catalog data types.
-  - [ ] Create `src/data/poseCatalog.ts` containing a set of pre-defined COCO-17 pose templates for Headshot, Half-Body, and Full-Body poses across `solo`, `couple`, and `group` subjects.
-- [ ] Task 2: Camera Store State Expansion for Framing & Active Pose (AC: #1, #4)
-  - [ ] Update `src/types/camera.ts` to include `selectedFraming: FramingCrop`, `setSelectedFraming: (framing: FramingCrop) => void`, `selectedPoseId: string | null`, and `setSelectedPoseId: (id: string | null) => void`.
-  - [ ] Update `src/stores/useCameraStore.ts` with `selectedFraming` defaulting to `'half_body'` and `selectedPoseId` defaulting to `null`.
-  - [ ] Add unit test assertions in `src/stores/__tests__/useCameraStore.test.ts` verifying state initialization, framing updates, and active pose selection.
-- [ ] Task 3: Contextual Pose Filtering Utility & Automated Unit Tests (AC: #2, #3)
-  - [ ] Create `src/utils/poseFilter.ts` implementing `filterPoseTemplates(templates: PoseTemplate[], options: { framing: FramingCrop; subjectCount?: SubjectCount | null; category?: AppMode }): PoseTemplate[]`.
-  - [ ] Handle fallback when no templates match specific subject count by returning templates matching the framing crop.
-  - [ ] Create `src/utils/__tests__/poseFilter.test.ts` with unit test cases validating framing filtering, dual framing + subject count filtering, and fallback scenarios.
-- [ ] Task 4: UI Components for Manual Framing Selector & Pose Carousel (AC: #1, #2, #3, #4)
-  - [ ] Create `src/components/camera/FramingSelector.tsx`: Horizontal chip / segment control overlay (`Headshot`, `Half-Body`, `Full-Body`) updating `useCameraStore`.
-  - [ ] Create `src/components/camera/PoseCarousel.tsx`: Horizontal scrollable carousel rendering filtered pose cards with title, tags, and active state indicator.
-  - [ ] Update `src/components/camera/CameraViewfinder.tsx` to conditionally render `FramingSelector` and `PoseCarousel` when `mode === 'person'`.
-- [ ] Task 5: Automated Verification & Integration Testing (AC: #1, #2, #3, #4)
-  - [ ] Run TypeScript type checks (`npx tsc --noEmit`).
-  - [ ] Run store and utility unit tests (`npx tsx src/stores/__tests__/useCameraStore.test.ts`, `npx tsx src/utils/__tests__/poseFilter.test.ts`).
+- [x] Task 1: Pose & Framing Data Contracts & Catalog Definition (AC: #1, #2, #3)
+  - [x] Create `src/types/pose.ts` defining `FramingCrop` (`'headshot'` | `'half_body'` | `'full_body'`), `PoseTemplate` interface conforming to `PoseTemplate.json` schema (`ARCHITECTURE-SPINE.md` section 3.1), and catalog data types.
+  - [x] Create `src/data/poseCatalog.ts` containing a set of pre-defined COCO-17 pose templates for Headshot, Half-Body, and Full-Body poses across `solo`, `couple`, and `group` subjects.
+- [x] Task 2: Camera Store State Expansion for Framing & Active Pose (AC: #1, #4)
+  - [x] Update `src/types/camera.ts` to include `selectedFraming: FramingCrop`, `setSelectedFraming: (framing: FramingCrop) => void`, `selectedPoseId: string | null`, and `setSelectedPoseId: (id: string | null) => void`.
+  - [x] Update `src/stores/useCameraStore.ts` with `selectedFraming` defaulting to `'half_body'` and `selectedPoseId` defaulting to `null`.
+  - [x] Add unit test assertions in `src/stores/__tests__/useCameraStore.test.ts` verifying state initialization, framing updates, and active pose selection.
+- [x] Task 3: Contextual Pose Filtering Utility & Automated Unit Tests (AC: #2, #3)
+  - [x] Create `src/utils/poseFilter.ts` implementing `filterPoseTemplates(templates: PoseTemplate[], options: { framing: FramingCrop; subjectCount?: SubjectCount | null; category?: AppMode }): PoseTemplate[]`.
+  - [x] Handle fallback when no templates match specific subject count by returning templates matching the framing crop.
+  - [x] Create `src/utils/__tests__/poseFilter.test.ts` with unit test cases validating framing filtering, dual framing + subject count filtering, and fallback scenarios.
+- [x] Task 4: UI Components for Manual Framing Selector & Pose Carousel (AC: #1, #2, #3, #4)
+  - [x] Create `src/components/camera/FramingSelector.tsx`: Horizontal chip / segment control overlay (`Headshot`, `Half-Body`, `Full-Body`) updating `useCameraStore`.
+  - [x] Create `src/components/camera/PoseCarousel.tsx`: Horizontal scrollable carousel rendering filtered pose cards with title, tags, and active state indicator.
+  - [x] Update `src/components/camera/CameraViewfinder.tsx` to conditionally render `FramingSelector` and `PoseCarousel` when `mode === 'person'`.
+- [x] Task 5: Automated Verification & Integration Testing (AC: #1, #2, #3, #4)
+  - [x] Run TypeScript type checks (`npx tsc --noEmit`).
+  - [x] Run store and utility unit tests (`npx tsx src/stores/__tests__/useCameraStore.test.ts`, `npx tsx src/utils/__tests__/poseFilter.test.ts`).
+
+### Review Findings
+
+- [x] [Review][Patch] Stale selectedPoseId state when switching framing crops [src/stores/useCameraStore.ts:L50]
+- [x] [Review][Patch] Redundant subject count text formatting in PoseCarousel context badge [src/components/camera/PoseCarousel.tsx:L26]
+- [x] [Review][Patch] Lack of useMemo for filterPoseTemplates in PoseCarousel [src/components/camera/PoseCarousel.tsx:L15]
+- [x] [Review][Patch] Empty state UI missing in PoseCarousel when no poses match criteria [src/components/camera/PoseCarousel.tsx:L31]
+- [x] [Review][Patch] Single underscore string replacement in PoseCarousel framing tag text [src/components/camera/PoseCarousel.tsx:L71]
 
 ## Dev Notes
 
@@ -97,22 +108,32 @@ Gemini 3.6 Flash (High)
 
 ### Debug Log References
 
+- `npx tsx src/stores/__tests__/useCameraStore.test.ts` -> PASSED
+- `npx tsx src/utils/__tests__/poseFilter.test.ts` -> PASSED
+- `npx tsc --noEmit` -> PASSED (0 errors)
+
 ### Completion Notes List
 
-- Story file generated by `bmad-create-story` workflow.
+- Defined framing crop types (`FramingCrop`), pose templates data contracts (`PoseTemplate`), and static COCO-17 pose catalog (`POSE_CATALOG`).
+- Expanded `useCameraStore` state with `selectedFraming` (default `'half_body'`) and `selectedPoseId` (default `null`).
+- Created pure, deterministic `poseFilter` utility supporting single framing crop filtering, dual framing + subject count filtering, and fallback behavior.
+- Built UI components `FramingSelector` and `PoseCarousel` with contextual subject count badge and integrated them into `CameraViewfinder` for `person` mode.
+- Verified 100% test pass rate across store unit tests, utility unit tests, and TypeScript compiler check.
 
 ### File List
 
-- `src/types/pose.ts`
-- `src/types/camera.ts`
-- `src/data/poseCatalog.ts`
-- `src/stores/useCameraStore.ts`
-- `src/utils/poseFilter.ts`
-- `src/utils/__tests__/poseFilter.test.ts`
-- `src/components/camera/FramingSelector.tsx`
-- `src/components/camera/PoseCarousel.tsx`
-- `src/components/camera/CameraViewfinder.tsx`
+- `src/types/pose.ts` (NEW)
+- `src/types/camera.ts` (MODIFIED)
+- `src/data/poseCatalog.ts` (NEW)
+- `src/stores/useCameraStore.ts` (MODIFIED)
+- `src/stores/__tests__/useCameraStore.test.ts` (MODIFIED)
+- `src/utils/poseFilter.ts` (NEW)
+- `src/utils/__tests__/poseFilter.test.ts` (NEW)
+- `src/components/camera/FramingSelector.tsx` (NEW)
+- `src/components/camera/PoseCarousel.tsx` (NEW)
+- `src/components/camera/CameraViewfinder.tsx` (MODIFIED)
 
 ### Change Log
 
 - 2026-07-29: Created Story 3.1 context for Manual Framing Selector & Contextual Pose Filtering. Set status to ready-for-dev.
+- 2026-07-30: Completed implementation of Story 3.1: manual framing selector, pose catalog, camera store state expansion, contextual pose filtering, HUD integration, and unit test suite. Status updated to review.

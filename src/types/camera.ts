@@ -1,4 +1,5 @@
 import { KeyframeVisionResult } from './vision';
+import { FramingCrop } from './pose';
 
 export type AppMode = 'person' | 'scene';
 
@@ -39,4 +40,10 @@ export interface CameraState {
   // Horizon Leveling Bar State
   showHorizonBar: boolean;
   setShowHorizonBar: (show: boolean) => void;
+
+  // Framing Crop & Selected Pose State
+  selectedFraming: FramingCrop;
+  setSelectedFraming: (framing: FramingCrop) => void;
+  selectedPoseId: string | null;
+  setSelectedPoseId: (id: string | null) => void;
 }

@@ -1,0 +1,72 @@
+import React from 'react';
+import { DirectorCueOverlay } from '../DirectorCueOverlay';
+import { useCameraStore } from '../../../stores/useCameraStore';
+import { comparePoseToTemplate } from '../../../utils/directorCueEngine';
+import { POSE_CATALOG } from '../../../data/poseCatalog';
+
+function assert(condition: boolean, message: string) {
+  if (!condition) {
+    throw new Error(`Assertion failed: ${message}`);
+  }
+}
+
+console.log('Running DirectorCueOverlay unit tests...');
+
+// Reset camera store state
+useCameraStore.setState({
+  mode: 'person',
+  isFrozen: false,
+  selectedPoseId: null,
+  visionResult: null,
+});
+
+// Test 1: Returns null when conditions are not met
+{
+  // Not frozen, no pose selected
+  const rendered1 = DirectorCueOverlay({});
+  assert(rendered1 === null, 'Should return null when isFrozen is false or selectedPoseId is null');
+
+  useCameraStore.setState({ isFrozen: true, selectedPoseId: 'headshot-solo-classic', visionResult: null });
+  const rendered2 = DirectorCueOverlay({});
+  assert(rendered2 === null, 'Should return null when visionResult is null');
+}
+
+// Test 2: Renders overlay when frozen, pose selected, and visionResult available
+{
+  const classicHeadshot = POSE_CATALOG.find((p) => p.id === 'headshot-solo-classic')!;
+
+  useCameraStore.setState({
+    mode: 'person',
+    isFrozen: true,
+    selectedPoseId: 'headshot-solo-classic',
+    visionResult: {
+      timestamp: Date.now(),
+      subjectCount: 'solo',
+      sceneType: 'landscape',
+      confidenceScore: 0.95,
+      boundingBox: { x: 10, y: 10, width: 100, height: 100 },
+      keypoints: {
+        nose: { x: 50, y: 35 },
+        left_eye: { x: 46, y: 32 },
+        right_eye: { x: 54, y: 32 },
+        left_shoulder: { x: 35, y: 65 },
+        right_shoulder: { x: 65, y: 65 },
+        left_elbow: { x: 30, y: 80 },
+        right_elbow: { x: 70, y: 80 },
+        left_wrist: { x: 25, y: 90 },
+        right_wrist: { x: 75, y: 90 },
+        left_hip: { x: 40, y: 95 },
+        right_hip: { x: 60, y: 95 },
+        left_knee: { x: 40, y: 98 },
+        right_knee: { x: 60, y: 98 },
+        left_ankle: { x: 40, y: 100 },
+        right_ankle: { x: 60, y: 100 },
+      },
+    },
+  });
+
+  const rendered = DirectorCueOverlay({});
+  assert(rendered !== null, 'Should render component when keyframe is frozen and visionResult is present');
+}
+
+console.log('DirectorCueOverlay unit tests passed!');

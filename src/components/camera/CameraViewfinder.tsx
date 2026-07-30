@@ -6,9 +6,13 @@ import { getNumericZoom, clampZoom } from '../../utils/lensCalculator';
 import { analyzeKeyframe } from '../../utils/visionInferencingEngine';
 import { HorizonLevelBar } from './HorizonLevelBar';
 import { ModeSwitcher } from './ModeSwitcher';
+import { VectorPoseOverlay } from './VectorPoseOverlay';
+import { FramingSelector } from './FramingSelector';
+import { PoseCarousel } from './PoseCarousel';
 import { LensPresetChips } from './LensPresetChips';
 import { ShutterButton } from './ShutterButton';
 import { AnalyzingIndicator } from './AnalyzingIndicator';
+import { DirectorCueOverlay } from './DirectorCueOverlay';
 import { useSafeCameraDevice } from '../../utils/cameraHooks';
 
 // Dynamic load Camera component for native platforms only
@@ -24,6 +28,7 @@ if (Platform.OS !== 'web') {
 
 export const CameraViewfinder: React.FC = () => {
   const device = useSafeCameraDevice('back');
+  const mode = useCameraStore((state) => state.mode);
   const isAppActive = useCameraStore((state) => state.isAppActive);
   const setIsAppActive = useCameraStore((state) => state.setIsAppActive);
   const activeLens = useCameraStore((state) => state.activeLens);
@@ -117,6 +122,12 @@ export const CameraViewfinder: React.FC = () => {
       {/* Analyzing HUD & Keyframe Unfreeze Tap Listener */}
       <AnalyzingIndicator />
 
+      {/* COCO-17 Vector Pose Overlay Layer */}
+      <VectorPoseOverlay />
+
+      {/* Director Cues & Pose Alignment Feedback Overlay */}
+      <DirectorCueOverlay />
+
       {/* Top HUD Overlay - Mode Switcher */}
       <View style={[styles.topHudContainer, { top: topOffset }]} pointerEvents="box-none">
         <ModeSwitcher />
@@ -125,8 +136,14 @@ export const CameraViewfinder: React.FC = () => {
       {/* Center HUD Overlay - Horizon Leveling Bar */}
       <HorizonLevelBar />
 
-      {/* Bottom HUD Overlay - Lens Preset Chips & Shutter Button */}
+      {/* Bottom HUD Overlay - Framing Selector, Pose Carousel, Lens Preset Chips & Shutter Button */}
       <View style={[styles.bottomHudContainer, { bottom: bottomOffset }]} pointerEvents="box-none">
+        {mode === 'person' && (
+          <View style={styles.personHudLayer}>
+            <FramingSelector />
+            <PoseCarousel />
+          </View>
+        )}
         <LensPresetChips />
         <View style={styles.shutterContainer}>
           <ShutterButton />
@@ -141,26 +158,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: '#0F0F11',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  loadingTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  loadingText: {
-    color: '#8E8E93',
-    fontSize: 14,
-    fontWeight: '400',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
   topHudContainer: {
     position: 'absolute',
     left: 0,
@@ -174,6 +171,11 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 20,
     alignItems: 'center',
+  },
+  personHudLayer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   simulatorPreviewCanvas: {
     ...StyleSheet.absoluteFillObject,
@@ -203,7 +205,7 @@ const styles = StyleSheet.create({
     color: '#00E5FF',
   },
   shutterContainer: {
-    marginTop: 20,
+    marginTop: 16,
     alignItems: 'center',
   },
 });
