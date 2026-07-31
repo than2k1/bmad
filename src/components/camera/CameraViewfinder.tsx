@@ -13,6 +13,7 @@ import { LensPresetChips } from './LensPresetChips';
 import { ShutterButton } from './ShutterButton';
 import { AnalyzingIndicator } from './AnalyzingIndicator';
 import { DirectorCueOverlay } from './DirectorCueOverlay';
+import { PositioningBadgesOverlay } from './PositioningBadgesOverlay';
 import { useSafeCameraDevice } from '../../utils/cameraHooks';
 
 // Dynamic load Camera component for native platforms only
@@ -124,6 +125,9 @@ export const CameraViewfinder: React.FC = () => {
 
       {/* COCO-17 Vector Pose Overlay Layer */}
       <VectorPoseOverlay />
+
+      {/* Directional Distance & Height/Tilt Badges Overlay */}
+      <PositioningBadgesOverlay />
 
       {/* Director Cues & Pose Alignment Feedback Overlay */}
       <DirectorCueOverlay />
