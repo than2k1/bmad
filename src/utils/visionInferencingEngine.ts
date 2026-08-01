@@ -33,7 +33,10 @@ const DEFAULT_CONFIG: Required<InferenceEngineConfig> = {
   inputWidth: 640,
   inputHeight: 640,
   confidenceThreshold: 0.4,
-  nmsThreshold: 0.45,
+  // 0.6 chosen over the typical 0.45 detection-NMS default: pose subjects (couples,
+  // group hugs, parent/child) often produce overlapping torso boxes that would
+  // collapse distinct people into one detection at lower thresholds.
+  nmsThreshold: 0.6,
 };
 
 // Singleton Session & Model Cache for Sub-20ms Inferencing
@@ -215,11 +218,14 @@ function applyNMS(
   iouThreshold: number,
   maxDetections: number
 ): SubjectDetection[] {
+  // Floor at 1 to preserve the parser's "always returns >= 1 subject" producer
+  // contract when a caller passes maxSubjects = 0.
+  const cap = Math.max(1, maxDetections);
   const sorted = [...candidates].sort((a, b) => b.confidence - a.confidence);
   const selected: SubjectDetection[] = [];
 
   for (const candidate of sorted) {
-    if (selected.length >= maxDetections) break;
+    if (selected.length >= cap) break;
     let suppressed = false;
     for (const sel of selected) {
       if (calculateIoU(candidate.boundingBox, sel.boundingBox) > iouThreshold) {
@@ -244,28 +250,39 @@ function extractAnchor(
   forcedConfidence?: number
 ): SubjectDetection {
   const getVal = (row: number) => outputTensor[row * numAnchors + anchorIdx];
-  const conf = forcedConfidence ?? outputTensor[4 * numAnchors + anchorIdx];
+  const rawConf = forcedConfidence ?? outputTensor[4 * numAnchors + anchorIdx];
+  const conf = Number.isFinite(rawConf) ? rawConf : 0;
 
-  // Extract Bounding Box (Normalized 0.0 - 1.0)
-  const cx = getVal(0) / imgWidth;
-  const cy = getVal(1) / imgHeight;
-  const w = getVal(2) / imgWidth;
-  const h = getVal(3) / imgHeight;
+  // Extract Bounding Box (Normalized 0.0 - 1.0). Guard every ratio against
+  // non-finite tensor values (NaN / Infinity from malformed anchors on real
+  // low-quality model output) to prevent NaN from cascading through NMS,
+  // getPrimarySubject, and into the UI as `NaN% MATCH`.
+  const safeRatio = (row: number, dim: number) => {
+    const v = getVal(row) / dim;
+    return Number.isFinite(v) && v >= 0 ? v : 0;
+  };
+  const cx = safeRatio(0, imgWidth);
+  const cy = safeRatio(1, imgHeight);
+  const wRaw = safeRatio(2, imgWidth);
+  const hRaw = safeRatio(3, imgHeight);
+  const w = wRaw > 0 ? wRaw : 0.4;
+  const h = hRaw > 0 ? hRaw : 0.75;
 
+  const clamp01 = (v: number) => Math.min(1.0, Math.max(0, v));
   const boundingBox: SubjectBoundingBox = {
-    x: Math.max(0, cx - w / 2),
-    y: Math.max(0, cy - h / 2),
-    width: Math.min(1.0, w || 0.4),
-    height: Math.min(1.0, h || 0.75),
+    x: clamp01(cx - w / 2),
+    y: clamp01(cy - h / 2),
+    width: clamp01(w),
+    height: clamp01(h),
   };
 
   const getKeypoint = (startRow: number) => {
-    const kx = getVal(startRow) / imgWidth;
-    const ky = getVal(startRow + 1) / imgHeight;
+    const kx = safeRatio(startRow, imgWidth);
+    const ky = safeRatio(startRow + 1, imgHeight);
     const kconf = getVal(startRow + 2);
     return {
-      x: Number.isFinite(kx) && kx > 0 ? kx : 0.5,
-      y: Number.isFinite(ky) && ky > 0 ? ky : 0.3,
+      x: clamp01(kx > 0 ? kx : 0.5),
+      y: clamp01(ky > 0 ? ky : 0.3),
       confidence: Number.isFinite(kconf) && kconf > 0 ? kconf : conf,
     };
   };
@@ -299,14 +316,21 @@ export function parseYOLOv8PoseTensor(
   imgWidth: number = 640,
   imgHeight: number = 640,
   confidenceThreshold: number = 0.4,
-  nmsThreshold: number = 0.45,
+  nmsThreshold: number = 0.6,
   maxSubjects: number = MAX_SUBJECTS
 ): SubjectDetection[] {
+  // Guard against misconfigured direct callers. analyzeKeyframe hardcodes safe
+  // values, but this function is exported and its input contract must not
+  // silently produce NaN-laced SubjectDetections from zero/negative dimensions.
+  if (!outputTensor || numAnchors <= 0 || imgWidth <= 0 || imgHeight <= 0) {
+    return [{ keypoints: defaultKeypoints(), boundingBox: { x: 0, y: 0, width: 0.4, height: 0.75 }, confidence: 0.95 }];
+  }
+
   const candidates: SubjectDetection[] = [];
 
   for (let i = 0; i < numAnchors; i++) {
     const conf = outputTensor[4 * numAnchors + i];
-    if (conf < confidenceThreshold) continue;
+    if (!Number.isFinite(conf) || conf < confidenceThreshold) continue;
     candidates.push(extractAnchor(outputTensor, i, numAnchors, imgWidth, imgHeight));
   }
 
@@ -320,27 +344,70 @@ export function parseYOLOv8PoseTensor(
   return applyNMS(candidates, nmsThreshold, maxSubjects);
 }
 
+function defaultKeypoints(): COCO17Keypoints {
+  const fallback = { x: 0.5, y: 0.3, confidence: 0 };
+  return {
+    nose: fallback,
+    left_eye: fallback,
+    right_eye: fallback,
+    left_ear: fallback,
+    right_ear: fallback,
+    left_shoulder: fallback,
+    right_shoulder: fallback,
+    left_elbow: fallback,
+    right_elbow: fallback,
+    left_wrist: fallback,
+    right_wrist: fallback,
+    left_hip: fallback,
+    right_hip: fallback,
+    left_knee: fallback,
+    right_knee: fallback,
+    left_ankle: fallback,
+    right_ankle: fallback,
+  };
+}
+
+/**
+ * Picks the highest-confidence subject from a list. Shared picker used by both
+ * `getPrimarySubject` (single-subject consumers) and `analyzeKeyframe`
+ * (sceneType derivation) so the definition of "primary" is consistent end-to-end.
+ *
+ * Non-finite confidences are treated as 0 (NaN comparisons would otherwise leave
+ * the first subject winning regardless of other subjects' validity). Ties broken
+ * by bounding-box area (larger wins); further ties resolve to first-encountered.
+ */
+function pickPrimarySubject(subjects: SubjectDetection[]): SubjectDetection | null {
+  if (!subjects || subjects.length === 0) return null;
+  let best = subjects[0];
+  let bestConf = Number.isFinite(best.confidence) ? best.confidence : 0;
+  let bestArea = best.boundingBox.width * best.boundingBox.height;
+  for (let i = 1; i < subjects.length; i++) {
+    const s = subjects[i];
+    const sConf = Number.isFinite(s.confidence) ? s.confidence : 0;
+    if (sConf > bestConf) {
+      best = s;
+      bestConf = sConf;
+      bestArea = s.boundingBox.width * s.boundingBox.height;
+    } else if (sConf === bestConf) {
+      const sArea = s.boundingBox.width * s.boundingBox.height;
+      if (sArea > bestArea) {
+        best = s;
+        bestArea = sArea;
+      }
+    }
+  }
+  return best;
+}
+
 /**
  * Returns the highest-confidence subject from a keyframe vision result.
  * Used by single-subject consumers (positioning/recommendation engines,
  * DirectorCueOverlay) to pick the primary subject without losing the
  * multi-subject signal carried by `result.subjects`.
- * Ties broken by bounding-box area (larger wins).
  */
 export function getPrimarySubject(result: KeyframeVisionResult | null): SubjectDetection | null {
   if (!result || !result.subjects || result.subjects.length === 0) return null;
-  let best = result.subjects[0];
-  for (let i = 1; i < result.subjects.length; i++) {
-    const s = result.subjects[i];
-    if (s.confidence > best.confidence) {
-      best = s;
-    } else if (s.confidence === best.confidence) {
-      const sArea = s.boundingBox.width * s.boundingBox.height;
-      const bestArea = best.boundingBox.width * best.boundingBox.height;
-      if (sArea > bestArea) best = s;
-    }
-  }
-  return best;
+  return pickPrimarySubject(result.subjects);
 }
 
 /**
@@ -457,7 +524,13 @@ export async function analyzeKeyframe(
   if (subjects.length === 2) subjectCount = 'couple';
   if (subjects.length >= 3) subjectCount = 'group';
 
-  const primaryBbox = subjects[0]?.boundingBox ?? null;
+  // Derive sceneType from the SAME primary-subject picker that downstream
+  // consumers use (positioning/recommendation engines, DirectorCueOverlay).
+  // Previously this read subjects[0] directly, diverging from getPrimarySubject
+  // on confidence ties (NMS sort is stable, but getPrimarySubject tie-breaks by
+  // bbox area). Keeping one definition end-to-end prevents sceneType from being
+  // derived from a different subject than the one driving lens/exposure cues.
+  const primaryBbox = pickPrimarySubject(subjects)?.boundingBox ?? null;
   const sceneType: SceneType = primaryBbox && primaryBbox.height < 0.35 ? 'landscape' : 'architecture';
 
   const confidenceScore = subjects.reduce((max, s) => Math.max(max, s.confidence), 0);

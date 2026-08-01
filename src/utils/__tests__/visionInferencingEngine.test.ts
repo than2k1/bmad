@@ -7,13 +7,33 @@ import {
   getPrimarySubject,
   ImageFrameInput,
 } from '../visionInferencingEngine';
-import { KeyframeVisionResult, SubjectDetection } from '../../types/vision';
+import { KeyframeVisionResult, SubjectDetection, COCO17Keypoints } from '../../types/vision';
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
     throw new Error(`Assertion failed: ${message}`);
   }
 }
+
+const STUB_KEYPOINTS: COCO17Keypoints = {
+  nose: { x: 0.5, y: 0.2 },
+  left_eye: { x: 0.48, y: 0.18 },
+  right_eye: { x: 0.52, y: 0.18 },
+  left_ear: { x: 0.46, y: 0.2 },
+  right_ear: { x: 0.54, y: 0.2 },
+  left_shoulder: { x: 0.4, y: 0.35 },
+  right_shoulder: { x: 0.6, y: 0.35 },
+  left_elbow: { x: 0.35, y: 0.5 },
+  right_elbow: { x: 0.65, y: 0.5 },
+  left_wrist: { x: 0.3, y: 0.65 },
+  right_wrist: { x: 0.7, y: 0.65 },
+  left_hip: { x: 0.42, y: 0.6 },
+  right_hip: { x: 0.58, y: 0.6 },
+  left_knee: { x: 0.43, y: 0.75 },
+  right_knee: { x: 0.57, y: 0.75 },
+  left_ankle: { x: 0.44, y: 0.9 },
+  right_ankle: { x: 0.56, y: 0.9 },
+};
 
 /**
  * Helper: populate an anchor slot in a [1, 56, 8400] YOLOv8-Pose tensor with a synthetic detection.
@@ -107,7 +127,7 @@ export async function runVisionEngineTests() {
     const overlapTensor = new Float32Array(56 * 8400);
     // Anchor 0: subject at cx=320, cy=320, w=200, h=400
     setAnchor(overlapTensor, 0, 8400, [320, 320, 200, 400], 0.95, [320, 320]);
-    // Anchor 1: nearly identical subject at cx=325, cy=322, w=205, h=405 (IoU > 0.45)
+    // Anchor 1: nearly identical subject at cx=325, cy=322, w=205, h=405 (IoU ≈ 0.94, well above 0.6)
     setAnchor(overlapTensor, 1, 8400, [325, 322, 205, 405], 0.85, [325, 322]);
 
     const overlapParsed = parseYOLOv8PoseTensor(overlapTensor, 8400, 640, 640, 0.4);
@@ -124,9 +144,13 @@ export async function runVisionEngineTests() {
     }
     const capParsed = parseYOLOv8PoseTensor(capTensor, 8400, 640, 640, 0.4);
     assert(capParsed.length === 4, `6 anchors should cap at 4 subjects, got ${capParsed.length}`);
+    // Verify the 4 highest-confidence subjects survive (not just the count).
+    // Confidence sequence was 0.9, 0.85, 0.8, 0.75, 0.7, 0.65 — top 4 expected.
+    assert(Math.abs(capParsed[0].confidence - 0.9) < 0.001, `Top subject should be 0.9 conf, got ${capParsed[0].confidence}`);
+    assert(Math.abs(capParsed[3].confidence - 0.75) < 0.001, `4th subject should be 0.75 conf (lowest kept), got ${capParsed[3].confidence}`);
   }
 
-  // 7. Test getPrimarySubject helper
+  // 7. Test getPrimarySubject helper (including tie-on-confidence + NaN handling)
   {
     assert(getPrimarySubject(null) === null, 'getPrimarySubject(null) should return null');
     const emptyResult: KeyframeVisionResult = {
@@ -143,15 +167,77 @@ export async function runVisionEngineTests() {
       subjectCount: 'group',
       sceneType: 'architecture',
       subjects: [
-        { keypoints: {} as any, boundingBox: { x: 0, y: 0, width: 0.2, height: 0.4 }, confidence: 0.7 },
-        { keypoints: {} as any, boundingBox: { x: 0.5, y: 0, width: 0.3, height: 0.6 }, confidence: 0.92 },
-        { keypoints: {} as any, boundingBox: { x: 0.8, y: 0, width: 0.15, height: 0.3 }, confidence: 0.85 },
+        { keypoints: STUB_KEYPOINTS, boundingBox: { x: 0, y: 0, width: 0.2, height: 0.4 }, confidence: 0.7 },
+        { keypoints: STUB_KEYPOINTS, boundingBox: { x: 0.5, y: 0, width: 0.3, height: 0.6 }, confidence: 0.92 },
+        { keypoints: STUB_KEYPOINTS, boundingBox: { x: 0.8, y: 0, width: 0.15, height: 0.3 }, confidence: 0.85 },
       ],
       confidenceScore: 0.92,
     };
     const primary = getPrimarySubject(multiResult);
     assert(primary !== null, 'getPrimarySubject should return non-null for non-empty subjects');
     assert(Math.abs(primary!.confidence - 0.92) < 0.001, 'getPrimarySubject should return highest-confidence subject');
+
+    // Tie on confidence: larger bbox area wins
+    const tiedResult: KeyframeVisionResult = {
+      timestamp: Date.now(),
+      subjectCount: 'couple',
+      sceneType: 'architecture',
+      subjects: [
+        { keypoints: STUB_KEYPOINTS, boundingBox: { x: 0, y: 0, width: 0.2, height: 0.2 }, confidence: 0.9 },     // area 0.04
+        { keypoints: STUB_KEYPOINTS, boundingBox: { x: 0.5, y: 0, width: 0.3, height: 0.3 }, confidence: 0.9 },    // area 0.09 ← winner
+        { keypoints: STUB_KEYPOINTS, boundingBox: { x: 0.1, y: 0.5, width: 0.25, height: 0.25 }, confidence: 0.9 }, // area 0.0625
+      ],
+      confidenceScore: 0.9,
+    };
+    const tiedPrimary = getPrimarySubject(tiedResult);
+    assert(tiedPrimary !== null, 'tied getPrimarySubject should still return a subject');
+    assert(Math.abs(tiedPrimary!.boundingBox.width - 0.3) < 0.001, 'On tied confidence, larger-area bbox should win');
+
+    // NaN confidence on first subject should NOT cause it to win over a valid one
+    const nanResult: KeyframeVisionResult = {
+      timestamp: Date.now(),
+      subjectCount: 'couple',
+      sceneType: 'architecture',
+      subjects: [
+        { keypoints: STUB_KEYPOINTS, boundingBox: { x: 0, y: 0, width: 0.4, height: 0.4 }, confidence: NaN },
+        { keypoints: STUB_KEYPOINTS, boundingBox: { x: 0.5, y: 0, width: 0.2, height: 0.2 }, confidence: 0.5 },
+      ],
+      confidenceScore: 0.5,
+    };
+    const nanPrimary = getPrimarySubject(nanResult);
+    assert(nanPrimary !== null && Math.abs(nanPrimary!.confidence - 0.5) < 0.001, 'NaN-confidence subject should not win over a valid 0.5-conf one');
+  }
+
+  // 7b. Test forced fallback path (all anchors below threshold → single phantom subject)
+  {
+    const emptyTensor = new Float32Array(56 * 8400); // all zeros — nothing meets threshold
+    const fallbackParsed = parseYOLOv8PoseTensor(emptyTensor, 8400, 640, 640, 0.4);
+    assert(fallbackParsed.length === 1, `Empty/below-threshold tensor should yield 1 fallback subject, got ${fallbackParsed.length}`);
+    assert(Math.abs(fallbackParsed[0].confidence - 0.95) < 0.001, 'Fallback subject should carry forced 0.95 confidence');
+    // Bbox defaults should be finite (NaN would propagate to UI as `NaN% MATCH`)
+    const fb = fallbackParsed[0].boundingBox;
+    assert(Number.isFinite(fb.x) && Number.isFinite(fb.y) && Number.isFinite(fb.width) && Number.isFinite(fb.height), 'Fallback bbox must be fully finite (no NaN propagation)');
+    assert(fb.width > 0 && fb.height > 0, 'Fallback bbox should have positive dimensions');
+  }
+
+  // 7c. Test input validation guards (degenerate dimensions → safe fallback)
+  {
+    const guardParsed = parseYOLOv8PoseTensor(new Float32Array(0), 0, 0, 0, 0.4);
+    assert(guardParsed.length === 1, 'numAnchors<=0 / imgWidth<=0 should return safe fallback, not crash');
+    assert(Math.abs(guardParsed[0].confidence - 0.95) < 0.001, 'Guard fallback should carry 0.95 confidence');
+    // maxSubjects=0 should still yield >=1 (producer contract floor)
+    const capFloor = parseYOLOv8PoseTensor(new Float32Array(56 * 8400), 8400, 640, 640, 0.4, 0.6, 0);
+    assert(capFloor.length >= 1, 'maxSubjects=0 should floor to 1 (producer contract)');
+  }
+
+  // 7d. Test NMS boundary — two subjects with low overlap (IoU < 0.6) should both survive
+  {
+    const distinctTensor = new Float32Array(56 * 8400);
+    // Two people side-by-side: cx=160 vs cx=480, w=120 each — IoU = 0
+    setAnchor(distinctTensor, 0, 8400, [160, 320, 120, 300], 0.9, [160, 320]);
+    setAnchor(distinctTensor, 100, 8400, [480, 320, 120, 300], 0.85, [480, 320]);
+    const distinctParsed = parseYOLOv8PoseTensor(distinctTensor, 8400, 640, 640, 0.4);
+    assert(distinctParsed.length === 2, `Two non-overlapping subjects (IoU=0) should both survive at threshold 0.6, got ${distinctParsed.length}`);
   }
 
   // 8. Test Cached Session Keyframe Inferencing Pipeline Execution

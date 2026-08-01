@@ -121,8 +121,20 @@ action_items:
   - epic: 4
     action: "Spec/code reconciliation for Story 4.3 grid stroke color - update AC #2 to sanction per-mode color differentiation or revert Golden Ratio to spec'd rgba(255,255,255,0.45)"
     owner: "Sally"
-    status: open
+    status: done
   - epic: 4
     action: "Address deferred evaluateLensRecommendation(null, 'headshot') test coverage gap and sceneType exhaustiveness check from deferred-work.md"
+    owner: "Amelia"
+    status: open
+  - epic: 4
+    action: "Wire useLensGuidance.onViewportLayout in CameraViewfinder so viewportHeight is captured from real layout — currently always 1000, causing backlight alert to fire for every keyframe with a detected subject"
+    owner: "Winston"
+    status: open
+  - epic: 4
+    action: "Wire DirectorCueOverlay.test.ts for jest+react-native transformer pipeline (plain tsx cannot import react-native)"
+    owner: "Dana"
+    status: open
+  - epic: 4
+    action: "Replace Math.round() ratio assertions in sceneCompositionEngine.test.ts with precise float comparisons"
     owner: "Amelia"
     status: open
