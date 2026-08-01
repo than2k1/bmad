@@ -4,6 +4,7 @@ import {
   calculateGoldenRatioLines,
   evaluateSceneGuidanceBadge,
 } from '../sceneCompositionEngine';
+import { SceneType } from '../../types/vision';
 
 function testRuleOfThirds() {
   const width = 300;
@@ -74,7 +75,7 @@ function testEvaluateSceneGuidanceBadge() {
   const interior = evaluateSceneGuidanceBadge('interior');
   assert.ok(interior.text.includes('Interior Detected'));
 
-  const fallback = evaluateSceneGuidanceBadge('unknown');
+  const fallback = evaluateSceneGuidanceBadge('unknown' as SceneType);
   assert.ok(fallback.text.includes('Scene Detected'));
   assert.ok(fallback.accentColor);
   console.log('✓ evaluateSceneGuidanceBadge passed');
