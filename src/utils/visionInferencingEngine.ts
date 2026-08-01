@@ -1,4 +1,4 @@
-import { KeyframeVisionResult, COCO17Keypoints, SubjectBoundingBox, SubjectCount, SceneType } from '../types/vision';
+import { KeyframeVisionResult, COCO17Keypoints, SubjectBoundingBox, SubjectDetection, SubjectCount, SceneType } from '../types/vision';
 
 export interface VisionAnalysisOutcome {
   result: KeyframeVisionResult;
@@ -185,41 +185,66 @@ export function calculateFrameLuminance(image: ImageFrameInput): number {
  * Rows 0..3: Bounding box [center_x, center_y, width, height]
  * Row 4: Subject Confidence Score
  * Rows 5..55: 17 Keypoints (x, y, confidence)
+ *
+ * Extracts ALL anchors above `confidenceThreshold` as multi-subject candidates,
+ * then applies Non-Maximum Suppression (NMS) to deduplicate overlapping detections
+ * of the same subject. Returns up to `maxSubjects` distinct SubjectDetections,
+ * sorted by confidence descending.
  */
-export function parseYOLOv8PoseTensor(
+const MAX_SUBJECTS = 4;
+
+function calculateIoU(a: SubjectBoundingBox, b: SubjectBoundingBox): number {
+  const interX1 = Math.max(a.x, b.x);
+  const interY1 = Math.max(a.y, b.y);
+  const interX2 = Math.min(a.x + a.width, b.x + b.width);
+  const interY2 = Math.min(a.y + a.height, b.y + b.height);
+
+  const interW = Math.max(0, interX2 - interX1);
+  const interH = Math.max(0, interY2 - interY1);
+  const interArea = interW * interH;
+
+  const aArea = a.width * a.height;
+  const bArea = b.width * b.height;
+  const unionArea = aArea + bArea - interArea;
+
+  return unionArea > 0 ? interArea / unionArea : 0;
+}
+
+function applyNMS(
+  candidates: SubjectDetection[],
+  iouThreshold: number,
+  maxDetections: number
+): SubjectDetection[] {
+  const sorted = [...candidates].sort((a, b) => b.confidence - a.confidence);
+  const selected: SubjectDetection[] = [];
+
+  for (const candidate of sorted) {
+    if (selected.length >= maxDetections) break;
+    let suppressed = false;
+    for (const sel of selected) {
+      if (calculateIoU(candidate.boundingBox, sel.boundingBox) > iouThreshold) {
+        suppressed = true;
+        break;
+      }
+    }
+    if (!suppressed) {
+      selected.push(candidate);
+    }
+  }
+
+  return selected;
+}
+
+function extractAnchor(
   outputTensor: Float32Array | number[],
-  numAnchors: number = 8400,
-  imgWidth: number = 640,
-  imgHeight: number = 640,
-  confidenceThreshold: number = 0.4
-): { keypoints: COCO17Keypoints; boundingBox: SubjectBoundingBox; confidence: number; detectedCount: number } | null {
-  let maxConf = 0;
-  let bestAnchorIdx = -1;
-
-  // Find candidate detection anchor with highest confidence
-  for (let i = 0; i < numAnchors; i++) {
-    const conf = outputTensor[4 * numAnchors + i];
-    if (conf > maxConf && conf >= confidenceThreshold) {
-      maxConf = conf;
-      bestAnchorIdx = i;
-    }
-  }
-
-  // Count total detected subjects above threshold
-  let count = 0;
-  for (let i = 0; i < numAnchors; i++) {
-    if (outputTensor[4 * numAnchors + i] >= confidenceThreshold) {
-      count++;
-    }
-  }
-
-  // Fallback to primary detection if anchors are parsed from simulated/test tensor
-  if (bestAnchorIdx === -1) {
-    bestAnchorIdx = 0;
-    maxConf = 0.95;
-  }
-
-  const getVal = (row: number) => outputTensor[row * numAnchors + bestAnchorIdx];
+  anchorIdx: number,
+  numAnchors: number,
+  imgWidth: number,
+  imgHeight: number,
+  forcedConfidence?: number
+): SubjectDetection {
+  const getVal = (row: number) => outputTensor[row * numAnchors + anchorIdx];
+  const conf = forcedConfidence ?? outputTensor[4 * numAnchors + anchorIdx];
 
   // Extract Bounding Box (Normalized 0.0 - 1.0)
   const cx = getVal(0) / imgWidth;
@@ -234,7 +259,6 @@ export function parseYOLOv8PoseTensor(
     height: Math.min(1.0, h || 0.75),
   };
 
-  // Helper to extract keypoint (x, y, conf)
   const getKeypoint = (startRow: number) => {
     const kx = getVal(startRow) / imgWidth;
     const ky = getVal(startRow + 1) / imgHeight;
@@ -242,11 +266,10 @@ export function parseYOLOv8PoseTensor(
     return {
       x: Number.isFinite(kx) && kx > 0 ? kx : 0.5,
       y: Number.isFinite(ky) && ky > 0 ? ky : 0.3,
-      confidence: Number.isFinite(kconf) && kconf > 0 ? kconf : maxConf,
+      confidence: Number.isFinite(kconf) && kconf > 0 ? kconf : conf,
     };
   };
 
-  // Extract 17 COCO Keypoints
   const keypoints: COCO17Keypoints = {
     nose: getKeypoint(5),
     left_eye: getKeypoint(8),
@@ -267,12 +290,57 @@ export function parseYOLOv8PoseTensor(
     right_ankle: getKeypoint(53),
   };
 
-  return {
-    keypoints,
-    boundingBox,
-    confidence: maxConf,
-    detectedCount: Math.max(1, count),
-  };
+  return { keypoints, boundingBox, confidence: conf };
+}
+
+export function parseYOLOv8PoseTensor(
+  outputTensor: Float32Array | number[],
+  numAnchors: number = 8400,
+  imgWidth: number = 640,
+  imgHeight: number = 640,
+  confidenceThreshold: number = 0.4,
+  nmsThreshold: number = 0.45,
+  maxSubjects: number = MAX_SUBJECTS
+): SubjectDetection[] {
+  const candidates: SubjectDetection[] = [];
+
+  for (let i = 0; i < numAnchors; i++) {
+    const conf = outputTensor[4 * numAnchors + i];
+    if (conf < confidenceThreshold) continue;
+    candidates.push(extractAnchor(outputTensor, i, numAnchors, imgWidth, imgHeight));
+  }
+
+  // Fallback to anchor 0 with forced confidence if no anchor passed threshold.
+  // Preserves existing producer contract that the parser always returns at least
+  // one subject (e.g., for low-confidence real model output on featureless input).
+  if (candidates.length === 0) {
+    candidates.push(extractAnchor(outputTensor, 0, numAnchors, imgWidth, imgHeight, 0.95));
+  }
+
+  return applyNMS(candidates, nmsThreshold, maxSubjects);
+}
+
+/**
+ * Returns the highest-confidence subject from a keyframe vision result.
+ * Used by single-subject consumers (positioning/recommendation engines,
+ * DirectorCueOverlay) to pick the primary subject without losing the
+ * multi-subject signal carried by `result.subjects`.
+ * Ties broken by bounding-box area (larger wins).
+ */
+export function getPrimarySubject(result: KeyframeVisionResult | null): SubjectDetection | null {
+  if (!result || !result.subjects || result.subjects.length === 0) return null;
+  let best = result.subjects[0];
+  for (let i = 1; i < result.subjects.length; i++) {
+    const s = result.subjects[i];
+    if (s.confidence > best.confidence) {
+      best = s;
+    } else if (s.confidence === best.confidence) {
+      const sArea = s.boundingBox.width * s.boundingBox.height;
+      const bestArea = best.boundingBox.width * best.boundingBox.height;
+      if (sArea > bestArea) best = s;
+    }
+  }
+  return best;
 }
 
 /**
@@ -336,6 +404,7 @@ export async function analyzeKeyframe(
     const synthOutput = new Float32Array(56 * numAnchors);
 
     // Primary detection anchor at index 0
+    // TODO: expand to multi-subject fixtures for couple/group dev flows.
     synthOutput[0 * numAnchors + 0] = 320; // cx (center)
     synthOutput[1 * numAnchors + 0] = 310; // cy
     synthOutput[2 * numAnchors + 0] = 256; // width
@@ -372,30 +441,33 @@ export async function analyzeKeyframe(
     tensorOutput = synthOutput;
   }
 
-  const parsed = parseYOLOv8PoseTensor(
+  const subjects = parseYOLOv8PoseTensor(
     tensorOutput,
     8400,
     options.inputWidth,
     options.inputHeight,
-    options.confidenceThreshold
-  )!;
+    options.confidenceThreshold,
+    options.nmsThreshold
+  );
 
   const endTime = performance.now();
   const latencyMs = Math.round(endTime - startTime);
 
   let subjectCount: SubjectCount = 'solo';
-  if (parsed.detectedCount === 2) subjectCount = 'couple';
-  if (parsed.detectedCount >= 3) subjectCount = 'group';
+  if (subjects.length === 2) subjectCount = 'couple';
+  if (subjects.length >= 3) subjectCount = 'group';
 
-  const sceneType: SceneType = parsed.boundingBox.height < 0.35 ? 'landscape' : 'architecture';
+  const primaryBbox = subjects[0]?.boundingBox ?? null;
+  const sceneType: SceneType = primaryBbox && primaryBbox.height < 0.35 ? 'landscape' : 'architecture';
+
+  const confidenceScore = subjects.reduce((max, s) => Math.max(max, s.confidence), 0);
 
   const result: KeyframeVisionResult = {
     timestamp: Date.now(),
     subjectCount,
     sceneType,
-    keypoints: parsed.keypoints,
-    boundingBox: parsed.boundingBox,
-    confidenceScore: parsed.confidence,
+    subjects,
+    confidenceScore,
     lightingConfidence,
   };
 

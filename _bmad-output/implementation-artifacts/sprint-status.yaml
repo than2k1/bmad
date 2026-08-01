@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-28
-last_updated: 2026-07-31
+last_updated: 2026-08-01 (multi-subject clustering shipped)
 project: bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -66,7 +66,7 @@ development_status:
   4-1-directional-distance-height-tilt-badges: done
   4-2-1-tap-lens-recommendation-exposure-alerts: done
   4-3-scene-mode-composition-grid-overlays: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
   epic-5: backlog
   5-1-background-line-bounding-box-spatial-layout-extractor: backlog
   5-2-mode-driven-composition-rule-evaluator-engine: backlog
@@ -109,8 +109,20 @@ action_items:
   - epic: 3
     action: "Implement distance & height/tilt math utility routines for bounding box comparison ahead of Story 4.1"
     owner: "Dana"
-    status: open
+    status: done
   - epic: 3
     action: "Implement spatial proximity clustering in visionInferencingEngine.ts and refactor KeyframeVisionResult to support multi-subject keypoint arrays (subjects: COCO17Keypoints[]) for couple/group pose overlays"
     owner: "Charlie"
+    status: done
+  - epic: 4
+    action: "Safe-area layout audit across all overlay components - replace hardcoded top/bottom offsets with useSafeAreaInsets() consistently"
+    owner: "Winston"
+    status: open
+  - epic: 4
+    action: "Spec/code reconciliation for Story 4.3 grid stroke color - update AC #2 to sanction per-mode color differentiation or revert Golden Ratio to spec'd rgba(255,255,255,0.45)"
+    owner: "Sally"
+    status: open
+  - epic: 4
+    action: "Address deferred evaluateLensRecommendation(null, 'headshot') test coverage gap and sceneType exhaustiveness check from deferred-work.md"
+    owner: "Amelia"
     status: open

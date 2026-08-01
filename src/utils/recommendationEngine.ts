@@ -1,6 +1,7 @@
 import { KeyframeVisionResult } from '../types/vision';
 import { FramingCrop } from '../types/pose';
 import { LensPreset } from '../types/camera';
+import { getPrimarySubject } from './visionInferencingEngine';
 
 export interface LensRecommendationResult {
   recommendedLens: LensPreset | null;
@@ -28,10 +29,11 @@ export function evaluateLensRecommendation(
   }
 
   const isPortraitCrop = selectedFraming === 'headshot' || selectedFraming === 'half_body';
+  const primaryBbox = getPrimarySubject(visionResult)?.boundingBox ?? null;
   const hasSubstantialSubjectHeight =
-    visionResult?.boundingBox != null &&
+    primaryBbox != null &&
     viewportHeight > 0 &&
-    visionResult.boundingBox.height / viewportHeight > 0.35;
+    primaryBbox.height / viewportHeight > 0.35;
 
   if (isPortraitCrop || hasSubstantialSubjectHeight) {
     return {
@@ -67,10 +69,11 @@ export function evaluateExposureGuidance(
   const isBacklitScene = visionResult.sceneType === 'sunset';
 
   // Backlight signal 2: subject bounding box near top of frame (bright sky behind subject)
+  const backlitBbox = getPrimarySubject(visionResult)?.boundingBox ?? null;
   const isBacklitByPosition =
-    visionResult.boundingBox != null &&
+    backlitBbox != null &&
     viewportHeight > 0 &&
-    visionResult.boundingBox.y / viewportHeight < 0.3;
+    backlitBbox.y / viewportHeight < 0.3;
 
   if (isBacklitScene || isBacklitByPosition) {
     return '+0.7 EV (Backlit Scene Detected)';

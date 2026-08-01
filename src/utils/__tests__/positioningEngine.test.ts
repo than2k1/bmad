@@ -13,6 +13,24 @@ function assert(condition: boolean, message: string) {
   }
 }
 
+const STUB_KEYPOINTS: COCO17Keypoints = {
+  nose: { x: 0.5, y: 0.2 },
+  left_eye: { x: 0.48, y: 0.18 },
+  right_eye: { x: 0.52, y: 0.18 },
+  left_shoulder: { x: 0.4, y: 0.35 },
+  right_shoulder: { x: 0.6, y: 0.35 },
+  left_elbow: { x: 0.35, y: 0.5 },
+  right_elbow: { x: 0.65, y: 0.5 },
+  left_wrist: { x: 0.3, y: 0.65 },
+  right_wrist: { x: 0.7, y: 0.65 },
+  left_hip: { x: 0.42, y: 0.6 },
+  right_hip: { x: 0.58, y: 0.6 },
+  left_knee: { x: 0.43, y: 0.75 },
+  right_knee: { x: 0.57, y: 0.75 },
+  left_ankle: { x: 0.44, y: 0.9 },
+  right_ankle: { x: 0.56, y: 0.9 },
+};
+
 console.log('Running positioningEngine unit tests...');
 
 // Test 1: Null / Undefined Bounding Box Fallback
@@ -21,7 +39,7 @@ console.log('Running positioningEngine unit tests...');
   assert(distRes.directive === 'optimal', 'Null bbox should fallback to optimal distance');
   assert(distRes.badgeText === 'Distance Good', 'Null bbox should return Distance Good badge text');
 
-  const heightTiltRes = calculateHeightAndTiltGuidance(null, null, 0, 'half_body');
+  const heightTiltRes = calculateHeightAndTiltGuidance(null,0, 'half_body');
   assert(heightTiltRes.heightDirective === 'optimal', 'Null bbox should fallback to optimal height');
   assert(heightTiltRes.tiltDirective === 'level', '0 degree pitch should return level tilt');
 
@@ -62,19 +80,19 @@ console.log('Running positioningEngine unit tests...');
 {
   // Camera placed too low => Subject center Y is high up in frame => Lower camera directive
   const highSubjectBbox: SubjectBoundingBox = { x: 100, y: 20, width: 200, height: 400 }; // Center Y = 220 / 1000 = 0.22
-  const heightResLow = calculateHeightAndTiltGuidance(highSubjectBbox, null, 0, 'half_body', 1000);
+  const heightResLow = calculateHeightAndTiltGuidance(highSubjectBbox,0, 'half_body', 1000);
   assert(heightResLow.heightDirective === 'lower_camera', `Expected lower_camera, got ${heightResLow.heightDirective}`);
   assert(heightResLow.heightBadgeText.includes('Lower camera'), `Expected 'Lower camera', got '${heightResLow.heightBadgeText}'`);
 
   // Camera placed too high => Subject center Y is low down in frame => Raise camera directive
   const lowSubjectBbox: SubjectBoundingBox = { x: 100, y: 550, width: 200, height: 400 }; // Center Y = 750 / 1000 = 0.75
-  const heightResHigh = calculateHeightAndTiltGuidance(lowSubjectBbox, null, 0, 'half_body', 1000);
+  const heightResHigh = calculateHeightAndTiltGuidance(lowSubjectBbox,0, 'half_body', 1000);
   assert(heightResHigh.heightDirective === 'raise_camera', `Expected raise_camera, got ${heightResHigh.heightDirective}`);
   assert(heightResHigh.heightBadgeText.includes('Raise camera'), `Expected 'Raise camera', got '${heightResHigh.heightBadgeText}'`);
 
   // Optimal height
   const centeredSubjectBbox: SubjectBoundingBox = { x: 100, y: 250, width: 200, height: 400 }; // Center Y = 450 / 1000 = 0.45
-  const heightResOptimal = calculateHeightAndTiltGuidance(centeredSubjectBbox, null, 0, 'half_body', 1000);
+  const heightResOptimal = calculateHeightAndTiltGuidance(centeredSubjectBbox,0, 'half_body', 1000);
   assert(heightResOptimal.heightDirective === 'optimal', `Expected optimal height, got ${heightResOptimal.heightDirective}`);
 }
 
@@ -83,17 +101,17 @@ console.log('Running positioningEngine unit tests...');
   const bbox: SubjectBoundingBox = { x: 100, y: 250, width: 200, height: 400 };
 
   // Pitch = -8 deg (camera pointing down) => Tilt camera up 8°
-  const tiltUpRes = calculateHeightAndTiltGuidance(bbox, null, -8, 'half_body', 1000);
+  const tiltUpRes = calculateHeightAndTiltGuidance(bbox,-8, 'half_body', 1000);
   assert(tiltUpRes.tiltDirective === 'tilt_up', `Expected tilt_up, got ${tiltUpRes.tiltDirective}`);
   assert(tiltUpRes.tiltBadgeText.includes('Tilt camera up 8°'), `Expected 'Tilt camera up 8°', got '${tiltUpRes.tiltBadgeText}'`);
 
   // Pitch = +6 deg (camera pointing up) => Tilt camera down 6°
-  const tiltDownRes = calculateHeightAndTiltGuidance(bbox, null, 6, 'half_body', 1000);
+  const tiltDownRes = calculateHeightAndTiltGuidance(bbox,6, 'half_body', 1000);
   assert(tiltDownRes.tiltDirective === 'tilt_down', `Expected tilt_down, got ${tiltDownRes.tiltDirective}`);
   assert(tiltDownRes.tiltBadgeText.includes('Tilt camera down 6°'), `Expected 'Tilt camera down 6°', got '${tiltDownRes.tiltBadgeText}'`);
 
   // Pitch = 1.5 deg (within ±2 deg threshold) => Tilt Level Good / level
-  const tiltLevelRes = calculateHeightAndTiltGuidance(bbox, null, 1.5, 'half_body', 1000);
+  const tiltLevelRes = calculateHeightAndTiltGuidance(bbox,1.5, 'half_body', 1000);
   assert(tiltLevelRes.tiltDirective === 'level', `Expected level tilt, got ${tiltLevelRes.tiltDirective}`);
   assert(tiltLevelRes.tiltBadgeText === 'Tilt Level Good', `Expected 'Tilt Level Good', got '${tiltLevelRes.tiltBadgeText}'`);
 }
@@ -104,8 +122,11 @@ console.log('Running positioningEngine unit tests...');
     timestamp: Date.now(),
     subjectCount: 'solo',
     sceneType: 'landscape',
-    keypoints: null,
-    boundingBox: { x: 100, y: 125, width: 250, height: 550 },
+    subjects: [{
+      keypoints: STUB_KEYPOINTS,
+      boundingBox: { x: 100, y: 125, width: 250, height: 550 },
+      confidence: 0.95,
+    }],
     confidenceScore: 0.95,
   };
 

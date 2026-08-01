@@ -3,6 +3,7 @@ import { StyleSheet, View, Text } from 'react-native';
 import { useCameraStore } from '../../stores/useCameraStore';
 import { POSE_CATALOG } from '../../data/poseCatalog';
 import { comparePoseToTemplate } from '../../utils/directorCueEngine';
+import { getPrimarySubject } from '../../utils/visionInferencingEngine';
 
 export const DirectorCueOverlay: React.FC = () => {
   const mode = useCameraStore((state) => state.mode);
@@ -10,7 +11,9 @@ export const DirectorCueOverlay: React.FC = () => {
   const selectedPoseId = useCameraStore((state) => state.selectedPoseId);
   const visionResult = useCameraStore((state) => state.visionResult);
 
-  if (mode !== 'person' || !isFrozen || !selectedPoseId || !visionResult || !visionResult.keypoints) {
+  const primarySubject = visionResult ? getPrimarySubject(visionResult) : null;
+
+  if (mode !== 'person' || !isFrozen || !selectedPoseId || !primarySubject) {
     return null;
   }
 
@@ -23,9 +26,9 @@ export const DirectorCueOverlay: React.FC = () => {
   }
 
   const comparison = comparePoseToTemplate(
-    visionResult.keypoints,
+    primarySubject.keypoints,
     activeTemplate,
-    visionResult.boundingBox
+    primarySubject.boundingBox
   );
 
   const isGreen = comparison.isGreenBadge;

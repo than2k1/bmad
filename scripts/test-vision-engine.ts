@@ -3,7 +3,7 @@ import path from 'path';
 import jpeg from 'jpeg-js';
 import { PNG } from 'pngjs';
 import { analyzeKeyframe, ImageFrameInput, preloadVisionModel } from '../src/utils/visionInferencingEngine';
-import { COCO17Keypoints, SubjectBoundingBox } from '../src/types/vision';
+import { COCO17Keypoints, SubjectDetection } from '../src/types/vision';
 
 /**
  * Decodes ANY JPG, PNG, or BMP image file from disk into raw RGB Uint8Array.
@@ -108,12 +108,12 @@ const SKELETON_PAIRS: [keyof COCO17Keypoints, keyof COCO17Keypoints, string][] =
 ];
 
 /**
- * Draws the detected COCO-17 skeleton points & lines onto the image pixel buffer and encodes a JPEG output image.
+ * Draws the detected COCO-17 skeleton points & lines for each detected subject onto the image
+ * pixel buffer and encodes a JPEG output image.
  */
 function drawSkeletonOverlayImage(
   inputFrame: ImageFrameInput,
-  keypoints: COCO17Keypoints,
-  boundingBox: SubjectBoundingBox | null,
+  subjects: SubjectDetection[],
   outputPath: string
 ): void {
   const { width, height, data } = inputFrame;
@@ -180,33 +180,35 @@ function drawSkeletonOverlayImage(
   const scaleRadius = Math.max(4, Math.round(Math.min(width, height) * 0.012));
   const scaleLineThickness = Math.max(3, Math.round(Math.min(width, height) * 0.006));
 
-  // 1. Draw Skeleton Lines
-  SKELETON_PAIRS.forEach(([p1, p2, color]) => {
-    const kp1 = keypoints[p1];
-    const kp2 = keypoints[p2];
-    if (kp1 && kp2 && (kp1.confidence ?? 1) > 0.1 && (kp2.confidence ?? 1) > 0.1) {
-      const x1 = Math.round(kp1.x * width);
-      const y1 = Math.round(kp1.y * height);
-      const x2 = Math.round(kp2.x * width);
-      const y2 = Math.round(kp2.y * height);
-      const [r, g, b] = hexToRgb(color);
-      drawLine(x1, y1, x2, y2, r, g, b, scaleLineThickness);
-    }
-  });
+  for (const subject of subjects) {
+    const { keypoints, boundingBox } = subject;
 
-  // 2. Draw Keypoint Joint Circles
-  Object.entries(keypoints).forEach(([name, kp]) => {
-    if (kp && (kp.confidence ?? 1) > 0.1) {
-      const kx = Math.round(kp.x * width);
-      const ky = Math.round(kp.y * height);
-      // Bright lime-green joint circles with white inner core
-      drawCircle(kx, ky, scaleRadius, 48, 209, 88);
-      drawCircle(kx, ky, Math.max(2, Math.round(scaleRadius * 0.4)), 255, 255, 255);
-    }
-  });
+    // 1. Draw Skeleton Lines
+    SKELETON_PAIRS.forEach(([p1, p2, color]) => {
+      const kp1 = keypoints[p1];
+      const kp2 = keypoints[p2];
+      if (kp1 && kp2 && (kp1.confidence ?? 1) > 0.1 && (kp2.confidence ?? 1) > 0.1) {
+        const x1 = Math.round(kp1.x * width);
+        const y1 = Math.round(kp1.y * height);
+        const x2 = Math.round(kp2.x * width);
+        const y2 = Math.round(kp2.y * height);
+        const [r, g, b] = hexToRgb(color);
+        drawLine(x1, y1, x2, y2, r, g, b, scaleLineThickness);
+      }
+    });
 
-  // 3. Draw Bounding Box (Cyan)
-  if (boundingBox) {
+    // 2. Draw Keypoint Joint Circles
+    Object.entries(keypoints).forEach(([name, kp]) => {
+      if (kp && (kp.confidence ?? 1) > 0.1) {
+        const kx = Math.round(kp.x * width);
+        const ky = Math.round(kp.y * height);
+        // Bright lime-green joint circles with white inner core
+        drawCircle(kx, ky, scaleRadius, 48, 209, 88);
+        drawCircle(kx, ky, Math.max(2, Math.round(scaleRadius * 0.4)), 255, 255, 255);
+      }
+    });
+
+    // 3. Draw Bounding Box (Cyan)
     const bx = Math.round(boundingBox.x * width);
     const by = Math.round(boundingBox.y * height);
     const bw = Math.round(boundingBox.width * width);
@@ -228,12 +230,12 @@ function drawSkeletonOverlayImage(
 }
 
 /**
- * Generates an interactive HTML preview file embedding the image and responsive SVG skeleton overlay.
+ * Generates an interactive HTML preview file embedding the image and responsive SVG skeleton overlay
+ * for every detected subject.
  */
 function generateSkeletonHTMLPreview(
   imagePath: string,
-  keypoints: COCO17Keypoints,
-  boundingBox: SubjectBoundingBox | null,
+  subjects: SubjectDetection[],
   outputPath: string
 ): void {
   const imageBase64 = fs.readFileSync(imagePath).toString('base64');
@@ -241,24 +243,32 @@ function generateSkeletonHTMLPreview(
   const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
   const dataUrl = `data:${mimeType};base64,${imageBase64}`;
 
-  // SVG Connections
-  const svgLines = SKELETON_PAIRS.map(([p1, p2, color]) => {
-    const kp1 = keypoints[p1];
-    const kp2 = keypoints[p2];
-    if (!kp1 || !kp2) return '';
-    return `<line x1="${(kp1.x * 100).toFixed(2)}%" y1="${(kp1.y * 100).toFixed(2)}%" x2="${(kp2.x * 100).toFixed(2)}%" y2="${(kp2.y * 100).toFixed(2)}%" stroke="${color}" stroke-width="4" stroke-linecap="round" />`;
-  }).join('\n    ');
+  const svgBboxes = subjects
+    .map((s) => {
+      const bb = s.boundingBox;
+      return `<rect x="${(bb.x * 100).toFixed(2)}%" y="${(bb.y * 100).toFixed(2)}%" width="${(bb.width * 100).toFixed(2)}%" height="${(bb.height * 100).toFixed(2)}%" fill="none" stroke="#00FFFF" stroke-width="3" stroke-dasharray="6,4" />`;
+    })
+    .join('\n    ');
 
-  // SVG Circles
-  const svgCircles = Object.entries(keypoints).map(([name, kp]) => {
-    if (!kp) return '';
-    return `<circle cx="${(kp.x * 100).toFixed(2)}%" cy="${(kp.y * 100).toFixed(2)}%" r="7" fill="#30D158" stroke="#FFFFFF" stroke-width="2"><title>${name} (${(kp.x).toFixed(2)}, ${(kp.y).toFixed(2)})</title></circle>`;
-  }).join('\n    ');
+  const svgLines = subjects
+    .flatMap((s) =>
+      SKELETON_PAIRS.map(([p1, p2, color]) => {
+        const kp1 = s.keypoints[p1];
+        const kp2 = s.keypoints[p2];
+        if (!kp1 || !kp2) return '';
+        return `<line x1="${(kp1.x * 100).toFixed(2)}%" y1="${(kp1.y * 100).toFixed(2)}%" x2="${(kp2.x * 100).toFixed(2)}%" y2="${(kp2.y * 100).toFixed(2)}%" stroke="${color}" stroke-width="4" stroke-linecap="round" />`;
+      })
+    )
+    .join('\n    ');
 
-  // SVG Bounding Box
-  const svgBbox = boundingBox
-    ? `<rect x="${(boundingBox.x * 100).toFixed(2)}%" y="${(boundingBox.y * 100).toFixed(2)}%" width="${(boundingBox.width * 100).toFixed(2)}%" height="${(boundingBox.height * 100).toFixed(2)}%" fill="none" stroke="#00FFFF" stroke-width="3" stroke-dasharray="6,4" />`
-    : '';
+  const svgCircles = subjects
+    .flatMap((s) =>
+      Object.entries(s.keypoints).map(([name, kp]) => {
+        if (!kp) return '';
+        return `<circle cx="${(kp.x * 100).toFixed(2)}%" cy="${(kp.y * 100).toFixed(2)}%" r="7" fill="#30D158" stroke="#FFFFFF" stroke-width="2"><title>${name} (${kp.x.toFixed(2)}, ${kp.y.toFixed(2)})</title></circle>`;
+      })
+    )
+    .join('\n    ');
 
   const htmlContent = `<!DOCTYPE html>
 <html lang="en">
@@ -284,7 +294,7 @@ function generateSkeletonHTMLPreview(
   <div class="container">
     <img src="${dataUrl}" alt="Original Input Image" />
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-      ${svgBbox}
+      ${svgBboxes}
       ${svgLines}
       ${svgCircles}
     </svg>
@@ -353,39 +363,40 @@ async function runStaticImageInferenceTest() {
 
   console.log(`⏱️ Inferencing Latency: ${latencyMs} ms (NFR-1.1 Target: <200ms)`);
   console.log(`🎯 Overall Pose Confidence Score: ${(result.confidenceScore * 100).toFixed(1)}%`);
-  console.log(`👥 Detected Subject Count: ${result.subjectCount.toUpperCase()}`);
+  console.log(`👥 Detected Subject Count: ${result.subjectCount.toUpperCase()} (${result.subjects.length} raw)`);
   console.log(`🏞️ Scene Classification: ${result.sceneType.toUpperCase()}`);
-  console.log('\n📦 Subject Bounding Box (Normalized):');
-  console.log(`   x: ${result.boundingBox?.x.toFixed(3)}, y: ${result.boundingBox?.y.toFixed(3)}, w: ${result.boundingBox?.width.toFixed(3)}, h: ${result.boundingBox?.height.toFixed(3)}`);
 
-  console.log('\n🦴 Detected COCO-17 Body Keypoints:');
-  if (result.keypoints) {
-    const kps = result.keypoints;
-    console.log(`   - Nose:            x=${kps.nose.x.toFixed(3)}, y=${kps.nose.y.toFixed(3)} (conf: ${(kps.nose.confidence! * 100).toFixed(0)}%)`);
-    console.log(`   - Left Eye:        x=${kps.left_eye.x.toFixed(3)}, y=${kps.left_eye.y.toFixed(3)}`);
-    console.log(`   - Right Eye:       x=${kps.right_eye.x.toFixed(3)}, y=${kps.right_eye.y.toFixed(3)}`);
-    console.log(`   - Left Shoulder:   x=${kps.left_shoulder.x.toFixed(3)}, y=${kps.left_shoulder.y.toFixed(3)}`);
-    console.log(`   - Right Shoulder:  x=${kps.right_shoulder.x.toFixed(3)}, y=${kps.right_shoulder.y.toFixed(3)}`);
-    console.log(`   - Left Elbow:      x=${kps.left_elbow.x.toFixed(3)}, y=${kps.left_elbow.y.toFixed(3)}`);
-    console.log(`   - Right Elbow:     x=${kps.right_elbow.x.toFixed(3)}, y=${kps.right_elbow.y.toFixed(3)}`);
-    console.log(`   - Left Wrist:      x=${kps.left_wrist.x.toFixed(3)}, y=${kps.left_wrist.y.toFixed(3)}`);
-    console.log(`   - Right Wrist:     x=${kps.right_wrist.x.toFixed(3)}, y=${kps.right_wrist.y.toFixed(3)}`);
-    console.log(`   - Left Hip:        x=${kps.left_hip.x.toFixed(3)}, y=${kps.left_hip.y.toFixed(3)}`);
-    console.log(`   - Right Hip:       x=${kps.right_hip.x.toFixed(3)}, y=${kps.right_hip.y.toFixed(3)}`);
-    console.log(`   - Left Knee:       x=${kps.left_knee.x.toFixed(3)}, y=${kps.left_knee.y.toFixed(3)}`);
-    console.log(`   - Right Knee:      x=${kps.right_knee.x.toFixed(3)}, y=${kps.right_knee.y.toFixed(3)}`);
-    console.log(`   - Left Ankle:      x=${kps.left_ankle.x.toFixed(3)}, y=${kps.left_ankle.y.toFixed(3)}`);
-    console.log(`   - Right Ankle:     x=${kps.right_ankle.x.toFixed(3)}, y=${kps.right_ankle.y.toFixed(3)}`);
-  }
+  result.subjects.forEach((subject, idx) => {
+    const bb = subject.boundingBox;
+    console.log(`\n📦 Subject #${idx + 1} — Confidence: ${(subject.confidence * 100).toFixed(1)}%`);
+    console.log(`   Bounding Box: x=${bb.x.toFixed(3)}, y=${bb.y.toFixed(3)}, w=${bb.width.toFixed(3)}, h=${bb.height.toFixed(3)}`);
+    const kps = subject.keypoints;
+    console.log('   🦴 COCO-17 Keypoints:');
+    console.log(`     - Nose:            x=${kps.nose.x.toFixed(3)}, y=${kps.nose.y.toFixed(3)} (conf: ${((kps.nose.confidence ?? 0) * 100).toFixed(0)}%)`);
+    console.log(`     - Left Eye:        x=${kps.left_eye.x.toFixed(3)}, y=${kps.left_eye.y.toFixed(3)}`);
+    console.log(`     - Right Eye:       x=${kps.right_eye.x.toFixed(3)}, y=${kps.right_eye.y.toFixed(3)}`);
+    console.log(`     - Left Shoulder:   x=${kps.left_shoulder.x.toFixed(3)}, y=${kps.left_shoulder.y.toFixed(3)}`);
+    console.log(`     - Right Shoulder:  x=${kps.right_shoulder.x.toFixed(3)}, y=${kps.right_shoulder.y.toFixed(3)}`);
+    console.log(`     - Left Elbow:      x=${kps.left_elbow.x.toFixed(3)}, y=${kps.left_elbow.y.toFixed(3)}`);
+    console.log(`     - Right Elbow:     x=${kps.right_elbow.x.toFixed(3)}, y=${kps.right_elbow.y.toFixed(3)}`);
+    console.log(`     - Left Wrist:      x=${kps.left_wrist.x.toFixed(3)}, y=${kps.left_wrist.y.toFixed(3)}`);
+    console.log(`     - Right Wrist:     x=${kps.right_wrist.x.toFixed(3)}, y=${kps.right_wrist.y.toFixed(3)}`);
+    console.log(`     - Left Hip:        x=${kps.left_hip.x.toFixed(3)}, y=${kps.left_hip.y.toFixed(3)}`);
+    console.log(`     - Right Hip:       x=${kps.right_hip.x.toFixed(3)}, y=${kps.right_hip.y.toFixed(3)}`);
+    console.log(`     - Left Knee:       x=${kps.left_knee.x.toFixed(3)}, y=${kps.left_knee.y.toFixed(3)}`);
+    console.log(`     - Right Knee:      x=${kps.right_knee.x.toFixed(3)}, y=${kps.right_knee.y.toFixed(3)}`);
+    console.log(`     - Left Ankle:      x=${kps.left_ankle.x.toFixed(3)}, y=${kps.left_ankle.y.toFixed(3)}`);
+    console.log(`     - Right Ankle:     x=${kps.right_ankle.x.toFixed(3)}, y=${kps.right_ankle.y.toFixed(3)}`);
+  });
 
   // Generate Skeleton Overlay Output Files
   const outputJpgPath = path.join(process.cwd(), 'assets', 'output-skeleton-overlay.jpg');
   const outputHtmlPath = path.join(process.cwd(), 'assets', 'skeleton-overlay-preview.html');
 
-  if (result.keypoints) {
+  if (result.subjects.length > 0) {
     console.log('\n🎨 Generating Skeleton Mask Overlay Files...');
-    drawSkeletonOverlayImage(inputFrame, result.keypoints, result.boundingBox, outputJpgPath);
-    generateSkeletonHTMLPreview(imagePath, result.keypoints, result.boundingBox, outputHtmlPath);
+    drawSkeletonOverlayImage(inputFrame, result.subjects, outputJpgPath);
+    generateSkeletonHTMLPreview(imagePath, result.subjects, outputHtmlPath);
 
     console.log(`🖼️ Output Overlay Image: file:///${outputJpgPath.replace(/\\/g, '/')}`);
     console.log(`🌐 Interactive HTML Preview: file:///${outputHtmlPath.replace(/\\/g, '/')}`);

@@ -35,12 +35,18 @@ export type SubjectCount = 'solo' | 'couple' | 'group';
 
 export type SceneType = 'landscape' | 'architecture' | 'food' | 'interior' | 'sunset';
 
+export interface SubjectDetection {
+  keypoints: COCO17Keypoints;
+  boundingBox: SubjectBoundingBox;
+  confidence: number;
+}
+
 export interface KeyframeVisionResult {
   timestamp: number;
   subjectCount: SubjectCount;
   sceneType: SceneType;
-  keypoints: COCO17Keypoints | null;
-  boundingBox: SubjectBoundingBox | null;
+  subjects: SubjectDetection[];
+  /** Max subject confidence; 0 when no subjects detected. */
   confidenceScore: number;
   /** Lighting quality score [0–1]: 0 = dark/unusable, 1 = well-lit. Distinct from
    *  confidenceScore (vision inference confidence). Used by exposure guidance logic. */

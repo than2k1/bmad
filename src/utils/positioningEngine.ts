@@ -1,5 +1,6 @@
-import { SubjectBoundingBox, KeyframeVisionResult, COCO17Keypoints } from '../types/vision';
+import { SubjectBoundingBox, KeyframeVisionResult } from '../types/vision';
 import { FramingCrop } from '../types/pose';
+import { getPrimarySubject } from './visionInferencingEngine';
 
 export type DistanceDirective = 'step_back' | 'step_closer' | 'optimal';
 export type HeightDirective = 'lower_camera' | 'raise_camera' | 'optimal';
@@ -121,7 +122,6 @@ export function calculateDistanceGuidance(
  */
 export function calculateHeightAndTiltGuidance(
   boundingBox: SubjectBoundingBox | null,
-  _keypoints: COCO17Keypoints | null,
   pitchDegrees: number = 0,
   framing: FramingCrop = 'half_body',
   canvasHeight: number = 1000
@@ -177,11 +177,11 @@ export function evaluateCameraPositioning(
   pitchDegrees: number = 0,
   canvasHeight: number = 1000
 ): PositioningEvaluation {
-  const boundingBox = visionResult?.boundingBox ?? null;
-  const keypoints = visionResult?.keypoints ?? null;
+  const primarySubject = getPrimarySubject(visionResult);
+  const boundingBox = primarySubject?.boundingBox ?? null;
 
   const distance = calculateDistanceGuidance(boundingBox, framing, canvasHeight);
-  const heightAndTilt = calculateHeightAndTiltGuidance(boundingBox, keypoints, pitchDegrees, framing, canvasHeight);
+  const heightAndTilt = calculateHeightAndTiltGuidance(boundingBox, pitchDegrees, framing, canvasHeight);
 
   const isAllOptimal =
     distance.directive === 'optimal' &&

@@ -3,15 +3,31 @@ import {
   evaluateExposureGuidance,
   evaluateRecommendations,
 } from '../recommendationEngine';
-import { KeyframeVisionResult, SubjectBoundingBox } from '../../types/vision';
-import { FramingCrop } from '../../types/pose';
-import { LensPreset } from '../../types/camera';
+import { KeyframeVisionResult, COCO17Keypoints } from '../../types/vision';
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
     throw new Error(`Assertion failed: ${message}`);
   }
 }
+
+const STUB_KEYPOINTS: COCO17Keypoints = {
+  nose: { x: 0.5, y: 0.2 },
+  left_eye: { x: 0.48, y: 0.18 },
+  right_eye: { x: 0.52, y: 0.18 },
+  left_shoulder: { x: 0.4, y: 0.35 },
+  right_shoulder: { x: 0.6, y: 0.35 },
+  left_elbow: { x: 0.35, y: 0.5 },
+  right_elbow: { x: 0.65, y: 0.5 },
+  left_wrist: { x: 0.3, y: 0.65 },
+  right_wrist: { x: 0.7, y: 0.65 },
+  left_hip: { x: 0.42, y: 0.6 },
+  right_hip: { x: 0.58, y: 0.6 },
+  left_knee: { x: 0.43, y: 0.75 },
+  right_knee: { x: 0.57, y: 0.75 },
+  left_ankle: { x: 0.44, y: 0.9 },
+  right_ankle: { x: 0.56, y: 0.9 },
+};
 
 console.log('Running recommendationEngine unit tests...');
 
@@ -53,8 +69,11 @@ console.log('Running recommendationEngine unit tests...');
     timestamp: Date.now(),
     subjectCount: 'solo',
     sceneType: 'landscape',
-    keypoints: null,
-    boundingBox: { x: 100, y: 100, width: 300, height: 450 }, // 450/1000 = 0.45 > 0.35
+    subjects: [{
+      keypoints: STUB_KEYPOINTS,
+      boundingBox: { x: 100, y: 100, width: 300, height: 450 }, // 450/1000 = 0.45 > 0.35
+      confidence: 0.9,
+    }],
     confidenceScore: 0.9,
   };
   const largeSubjectRes = evaluateLensRecommendation(largeSubjectVision, 'full_body', '1x', 1000);
@@ -65,8 +84,11 @@ console.log('Running recommendationEngine unit tests...');
     timestamp: Date.now(),
     subjectCount: 'solo',
     sceneType: 'landscape',
-    keypoints: null,
-    boundingBox: { x: 100, y: 100, width: 200, height: 200 }, // 200/1000 = 0.20
+    subjects: [{
+      keypoints: STUB_KEYPOINTS,
+      boundingBox: { x: 100, y: 100, width: 200, height: 200 }, // 200/1000 = 0.20
+      confidence: 0.9,
+    }],
     confidenceScore: 0.9,
   };
   const smallSubjectRes = evaluateLensRecommendation(smallSubjectVision, 'full_body', '1x', 1000);
@@ -80,8 +102,7 @@ console.log('Running recommendationEngine unit tests...');
     timestamp: Date.now(),
     subjectCount: 'solo',
     sceneType: 'sunset',
-    keypoints: null,
-    boundingBox: null,
+    subjects: [],
     confidenceScore: 0.95,
   };
   const sunsetExp = evaluateExposureGuidance(sunsetVision);
@@ -95,8 +116,11 @@ console.log('Running recommendationEngine unit tests...');
     timestamp: Date.now(),
     subjectCount: 'solo',
     sceneType: 'landscape',
-    keypoints: null,
-    boundingBox: { x: 100, y: 100, width: 200, height: 300 }, // y/1000 = 0.10 < 0.30 → backlit
+    subjects: [{
+      keypoints: STUB_KEYPOINTS,
+      boundingBox: { x: 100, y: 100, width: 200, height: 300 }, // y/1000 = 0.10 < 0.30 → backlit
+      confidence: 0.9,
+    }],
     confidenceScore: 0.9,
     lightingConfidence: 0.9,
   };
@@ -111,8 +135,11 @@ console.log('Running recommendationEngine unit tests...');
     timestamp: Date.now(),
     subjectCount: 'solo',
     sceneType: 'landscape',
-    keypoints: null,
-    boundingBox: { x: 100, y: 400, width: 200, height: 300 }, // y/1000 = 0.40 >= 0.30 → not backlit
+    subjects: [{
+      keypoints: STUB_KEYPOINTS,
+      boundingBox: { x: 100, y: 400, width: 200, height: 300 }, // y/1000 = 0.40 >= 0.30 → not backlit
+      confidence: 0.9,
+    }],
     confidenceScore: 0.9,
     lightingConfidence: 0.9,
   };
@@ -124,8 +151,7 @@ console.log('Running recommendationEngine unit tests...');
     timestamp: Date.now(),
     subjectCount: 'solo',
     sceneType: 'interior',
-    keypoints: null,
-    boundingBox: null,
+    subjects: [],
     confidenceScore: 0.85,
   };
   const interiorExp = evaluateExposureGuidance(interiorVision);
@@ -139,8 +165,7 @@ console.log('Running recommendationEngine unit tests...');
     timestamp: Date.now(),
     subjectCount: 'solo',
     sceneType: 'landscape',
-    keypoints: null,
-    boundingBox: null,
+    subjects: [],
     confidenceScore: 0.9, // high vision confidence — should NOT be used for lighting
     lightingConfidence: 0.4, // low lighting quality — should trigger alert
   };
@@ -155,8 +180,7 @@ console.log('Running recommendationEngine unit tests...');
     timestamp: Date.now(),
     subjectCount: 'solo',
     sceneType: 'landscape',
-    keypoints: null,
-    boundingBox: null,
+    subjects: [],
     confidenceScore: 0.4,
   };
   const lowConfFallbackExp = evaluateExposureGuidance(lowConfFallbackVision);
@@ -170,8 +194,7 @@ console.log('Running recommendationEngine unit tests...');
     timestamp: Date.now(),
     subjectCount: 'solo',
     sceneType: 'landscape',
-    keypoints: null,
-    boundingBox: null,
+    subjects: [],
     confidenceScore: 0.95,
     lightingConfidence: 0.95,
   };
@@ -185,8 +208,11 @@ console.log('Running recommendationEngine unit tests...');
     timestamp: Date.now(),
     subjectCount: 'solo',
     sceneType: 'sunset',
-    keypoints: null,
-    boundingBox: { x: 100, y: 100, width: 300, height: 500 },
+    subjects: [{
+      keypoints: STUB_KEYPOINTS,
+      boundingBox: { x: 100, y: 100, width: 300, height: 500 },
+      confidence: 0.9,
+    }],
     confidenceScore: 0.9,
   };
 
