@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import { CameraState, AppMode, CameraPermissionStatus, LensPreset } from '../types/camera';
+import { CameraState, AppMode, CameraPermissionStatus, LensPreset, GridMode } from '../types/camera';
 import { KeyframeVisionResult } from '../types/vision';
 import { FramingCrop } from '../types/pose';
 
 export const useCameraStore = create<CameraState>((set) => ({
   mode: 'person',
-  setMode: (mode: AppMode) => set({ mode }),
+  setMode: (mode: AppMode) => set({ mode, gridMode: 'none' }),
 
   permissionStatus: 'not-determined',
   setPermissionStatus: (status: CameraPermissionStatus) => set({ permissionStatus: status }),
@@ -51,4 +51,16 @@ export const useCameraStore = create<CameraState>((set) => ({
 
   selectedPoseId: null,
   setSelectedPoseId: (id: string | null) => set({ selectedPoseId: id }),
+
+  gridMode: 'none',
+  setGridMode: (mode: GridMode) => set({ gridMode: mode }),
+  cycleGridMode: () =>
+    set((state) => {
+      const nextModeMap: Record<GridMode, GridMode> = {
+        none: 'rule_of_thirds',
+        rule_of_thirds: 'golden_ratio',
+        golden_ratio: 'none',
+      };
+      return { gridMode: nextModeMap[state.gridMode] };
+    }),
 }));

@@ -42,4 +42,7 @@ export interface KeyframeVisionResult {
   keypoints: COCO17Keypoints | null;
   boundingBox: SubjectBoundingBox | null;
   confidenceScore: number;
+  /** Lighting quality score [0–1]: 0 = dark/unusable, 1 = well-lit. Distinct from
+   *  confidenceScore (vision inference confidence). Used by exposure guidance logic. */
+  lightingConfidence?: number;
 }

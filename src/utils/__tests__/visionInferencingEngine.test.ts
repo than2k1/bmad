@@ -1,4 +1,4 @@
-import { analyzeKeyframe, preprocessImageToTensor, parseYOLOv8PoseTensor, preloadVisionModel, ImageFrameInput } from '../visionInferencingEngine';
+import { analyzeKeyframe, preprocessImageToTensor, calculateFrameLuminance, parseYOLOv8PoseTensor, preloadVisionModel, ImageFrameInput } from '../visionInferencingEngine';
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -23,6 +23,13 @@ export async function runVisionEngineTests() {
   const tensor = preprocessImageToTensor(mockImage, 640, 640);
   assert(tensor.length === 1 * 3 * 640 * 640, `Tensor length should be 1228800, got ${tensor.length}`);
   assert(Math.abs(tensor[0] - 0.5019) < 0.01, 'Tensor RGB normalization should map 128 to ~0.5019');
+
+  // Test luminance calculation on dark, bright, and mid-gray frames
+  const darkFrame: ImageFrameInput = { data: new Uint8Array(100 * 100 * 3).fill(0), width: 100, height: 100, channels: 3 };
+  const brightFrame: ImageFrameInput = { data: new Uint8Array(100 * 100 * 3).fill(255), width: 100, height: 100, channels: 3 };
+  assert(calculateFrameLuminance(darkFrame) === 0, 'Black frame luminance should be 0.0');
+  assert(calculateFrameLuminance(brightFrame) === 1, 'White frame luminance should be 1.0');
+  assert(Math.abs(calculateFrameLuminance(mockImage) - 0.502) < 0.01, 'Mid-gray frame luminance should be ~0.502');
 
   // 3. Test YOLOv8-Pose Tensor Parsing
   const synthOutput = new Float32Array(56 * 8400);
@@ -68,6 +75,9 @@ export async function runVisionEngineTests() {
   }
 
   assert(result.confidenceScore > 0.5, 'Confidence score should be > 0.5');
+  assert(typeof result.lightingConfidence === 'number', 'lightingConfidence should be populated');
+  assert(result.lightingConfidence! >= 0 && result.lightingConfidence! <= 1, 'lightingConfidence should be in [0, 1]');
+
 
   console.log(`✅ All visionInferencingEngine unit tests passed successfully! (Cached Latency: ${outcome.latencyMs}ms)`);
 }

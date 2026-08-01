@@ -148,6 +148,38 @@ export function preprocessImageToTensor(
 }
 
 /**
+ * Calculates mean relative luminance Y [0.0 - 1.0] from image pixel buffer
+ * Standard ITU-R BT.601 formula: Y = (0.299 * R + 0.587 * G + 0.114 * B) / 255
+ */
+export function calculateFrameLuminance(image: ImageFrameInput): number {
+  if (!image.data || image.data.length === 0) return 0.85;
+
+  const channels = image.channels || 4;
+  const totalPixels = image.width * image.height;
+  if (totalPixels <= 0) return 0.85;
+
+  let sumLuminance = 0;
+  const maxSamples = Math.min(totalPixels, 10000);
+  const step = Math.max(1, Math.floor(totalPixels / maxSamples));
+  let sampleCount = 0;
+
+  for (let i = 0; i < totalPixels; i += step) {
+    const idx = i * channels;
+    if (idx + 2 >= image.data.length) break;
+    const r = image.data[idx];
+    const g = image.data[idx + 1];
+    const b = image.data[idx + 2];
+    const y = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
+    sumLuminance += y;
+    sampleCount++;
+  }
+
+  if (sampleCount === 0) return 0.85;
+  const avg = sumLuminance / sampleCount;
+  return Math.round(Math.min(1.0, Math.max(0.0, avg)) * 1000) / 1000;
+}
+
+/**
  * Post-processor for YOLOv8-Pose Tensor outputs [1, 56, 8400]
  * Matrix Layout:
  * Rows 0..3: Bounding box [center_x, center_y, width, height]
@@ -256,10 +288,12 @@ export async function analyzeKeyframe(
   const options = { ...DEFAULT_CONFIG, ...config };
 
   let rawTensor: Float32Array;
+  let lightingConfidence = 0.85;
 
   if (frameInput && typeof frameInput === 'object' && 'data' in frameInput && 'width' in frameInput) {
     const input = frameInput as ImageFrameInput;
     rawTensor = preprocessImageToTensor(input, options.inputWidth, options.inputHeight);
+    lightingConfidence = calculateFrameLuminance(input);
   } else {
     // Generate synthetic image tensor for simulator / default preview execution
     const bufferLength = 1 * 3 * options.inputHeight * options.inputWidth;
@@ -270,6 +304,7 @@ export async function analyzeKeyframe(
     for (let i = 0; i < rawTensor.length; i++) {
       rawTensor[i] = Math.random() * 0.1 + 0.45;
     }
+    lightingConfidence = 0.85;
   }
 
   let tensorOutput: Float32Array | number[] | null = null;
@@ -361,7 +396,9 @@ export async function analyzeKeyframe(
     keypoints: parsed.keypoints,
     boundingBox: parsed.boundingBox,
     confidenceScore: parsed.confidence,
+    lightingConfidence,
   };
+
 
   return {
     result,

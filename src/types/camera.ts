@@ -7,6 +7,8 @@ export type CameraPermissionStatus = 'granted' | 'denied' | 'not-determined' | '
 
 export type LensPreset = '0.5x' | '1x' | '3x';
 
+export type GridMode = 'none' | 'rule_of_thirds' | 'golden_ratio';
+
 export interface CameraState {
   // Active App Mode (Person vs Scene)
   mode: AppMode;
@@ -46,4 +48,9 @@ export interface CameraState {
   setSelectedFraming: (framing: FramingCrop) => void;
   selectedPoseId: string | null;
   setSelectedPoseId: (id: string | null) => void;
+
+  // Grid Overlay Mode State
+  gridMode: GridMode;
+  setGridMode: (mode: GridMode) => void;
+  cycleGridMode: () => void;
 }

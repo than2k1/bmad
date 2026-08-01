@@ -64,8 +64,8 @@ development_status:
   epic-3-retrospective: done
   epic-4: in-progress
   4-1-directional-distance-height-tilt-badges: done
-  4-2-1-tap-lens-recommendation-exposure-alerts: backlog
-  4-3-scene-mode-composition-grid-overlays: backlog
+  4-2-1-tap-lens-recommendation-exposure-alerts: done
+  4-3-scene-mode-composition-grid-overlays: done
   epic-4-retrospective: optional
   epic-5: backlog
   5-1-background-line-bounding-box-spatial-layout-extractor: backlog

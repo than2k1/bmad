@@ -3,18 +3,22 @@ import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { useCameraStore } from '../../stores/useCameraStore';
 import { LensPreset } from '../../types/camera';
 import { getLensChipLabel } from '../../utils/lensCalculator';
+import { useLensGuidance } from '../../hooks/useLensGuidance';
 
 const PRESETS: LensPreset[] = ['0.5x', '1x', '3x'];
 
 export const LensPresetChips: React.FC = () => {
   const activeLens = useCameraStore((state) => state.activeLens);
   const setActiveLens = useCameraStore((state) => state.setActiveLens);
+  const { guidance } = useLensGuidance();
+  const recommendedLens = guidance?.recommendedLens ?? null;
 
   return (
     <View style={styles.container} accessibilityRole="toolbar">
       {PRESETS.map((lens) => {
         const isActive = activeLens === lens;
         const isPortrait = lens === '3x';
+        const isRecommended = lens === '3x' && recommendedLens === '3x' && !isActive;
         const label = getLensChipLabel(lens);
 
         return (
@@ -24,22 +28,28 @@ export const LensPresetChips: React.FC = () => {
               styles.chip,
               isActive && styles.activeChip,
               isActive && isPortrait && styles.activePortraitChip,
+              isRecommended && styles.recommendedChip,
             ]}
             onPress={() => setActiveLens(lens)}
             activeOpacity={0.7}
             hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
             accessibilityRole="button"
             accessibilityState={{ selected: isActive }}
-            accessibilityLabel={`Zoom level ${label}`}
+            accessibilityLabel={
+              isRecommended
+                ? `Zoom level ${label} (Recommended for portrait crop)`
+                : `Zoom level ${label}`
+            }
           >
             <Text
               style={[
                 styles.chipText,
                 isActive && styles.activeChipText,
                 isActive && isPortrait && styles.activePortraitChipText,
+                isRecommended && styles.recommendedChipText,
               ]}
             >
-              {label}
+              {isRecommended ? `${label} ★` : label}
             </Text>
           </TouchableOpacity>
         );
@@ -76,6 +86,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#FFD60A',
   },
+  recommendedChip: {
+    backgroundColor: 'rgba(255, 214, 10, 0.15)',
+    borderWidth: 1.5,
+    borderColor: '#FFD60A',
+  },
   chipText: {
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 13,
@@ -86,6 +101,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   activePortraitChipText: {
+    color: '#FFD60A',
+    fontWeight: '700',
+  },
+  recommendedChipText: {
     color: '#FFD60A',
     fontWeight: '700',
   },

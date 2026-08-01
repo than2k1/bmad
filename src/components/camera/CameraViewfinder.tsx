@@ -14,6 +14,9 @@ import { ShutterButton } from './ShutterButton';
 import { AnalyzingIndicator } from './AnalyzingIndicator';
 import { DirectorCueOverlay } from './DirectorCueOverlay';
 import { PositioningBadgesOverlay } from './PositioningBadgesOverlay';
+import { ExposureAlertOverlay } from './ExposureAlertOverlay';
+import { CompositionGridOverlay } from './CompositionGridOverlay';
+import { GridModeToggle } from './GridModeToggle';
 import { useSafeCameraDevice } from '../../utils/cameraHooks';
 
 // Dynamic load Camera component for native platforms only
@@ -132,6 +135,12 @@ export const CameraViewfinder: React.FC = () => {
       {/* Director Cues & Pose Alignment Feedback Overlay */}
       <DirectorCueOverlay />
 
+      {/* Exposure Alerts & 1-Tap Lens Recommendation Overlay */}
+      <ExposureAlertOverlay />
+
+      {/* Scene Mode Composition Grid & Guidance Overlay */}
+      <CompositionGridOverlay />
+
       {/* Top HUD Overlay - Mode Switcher */}
       <View style={[styles.topHudContainer, { top: topOffset }]} pointerEvents="box-none">
         <ModeSwitcher />
@@ -140,7 +149,7 @@ export const CameraViewfinder: React.FC = () => {
       {/* Center HUD Overlay - Horizon Leveling Bar */}
       <HorizonLevelBar />
 
-      {/* Bottom HUD Overlay - Framing Selector, Pose Carousel, Lens Preset Chips & Shutter Button */}
+      {/* Bottom HUD Overlay - Framing Selector, Pose Carousel, Grid Toggle, Lens Preset Chips & Shutter Button */}
       <View style={[styles.bottomHudContainer, { bottom: bottomOffset }]} pointerEvents="box-none">
         {mode === 'person' && (
           <View style={styles.personHudLayer}>
@@ -148,6 +157,7 @@ export const CameraViewfinder: React.FC = () => {
             <PoseCarousel />
           </View>
         )}
+        {mode === 'scene' && <GridModeToggle />}
         <LensPresetChips />
         <View style={styles.shutterContainer}>
           <ShutterButton />
