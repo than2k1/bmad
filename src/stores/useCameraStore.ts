@@ -5,7 +5,16 @@ import { FramingCrop } from '../types/pose';
 
 export const useCameraStore = create<CameraState>((set) => ({
   mode: 'person',
-  setMode: (mode: AppMode) => set({ mode, gridMode: 'none' }),
+  setMode: (mode: AppMode) =>
+    set({
+      mode,
+      gridMode: 'none',
+      // Reset AI freeze state so it doesn't bleed across Person <-> Scene switches
+      isFrozen: false,
+      isAnalyzing: false,
+      visionResult: null,
+      inferenceLatencyMs: null,
+    }),
 
   permissionStatus: 'not-determined',
   setPermissionStatus: (status: CameraPermissionStatus) => set({ permissionStatus: status }),

@@ -92,6 +92,24 @@ export function getSkeletonConnectionLines(
 }
 
 /**
+ * Filters a full skeleton connection list to only those pairs where BOTH
+ * keypoints are present in the template's keypoints map.
+ *
+ * Use this for couple/group/party templates whose keypoints are intentionally
+ * sparse — it ensures every rendered joint has its connecting limb lines,
+ * producing a complete skeleton for the joints that ARE defined rather than
+ * a visually broken partial skeleton.
+ */
+export function getRenderedSkeletonConnections(
+  keypoints: PoseKeypointsMap,
+  connections: [string, string][]
+): [string, string][] {
+  if (!keypoints || !connections || !Array.isArray(connections)) return [];
+  const defined = new Set(Object.keys(keypoints));
+  return connections.filter(([from, to]) => defined.has(from) && defined.has(to));
+}
+
+/**
  * Clamps scale factor (0.5x .. 3.0x) and translation boundaries to ensure vector overlay stays visible.
  */
 export function clampPoseTransform(

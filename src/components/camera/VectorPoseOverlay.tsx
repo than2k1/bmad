@@ -14,6 +14,7 @@ import { POSE_CATALOG } from '../../data/poseCatalog';
 import {
   normalizeKeypointsToCanvas,
   getSkeletonConnectionLines,
+  getRenderedSkeletonConnections,
   clampPoseTransform,
   PoseTransform,
   DEFAULT_TRANSFORM,
@@ -137,14 +138,23 @@ export const VectorPoseOverlay: React.FC = () => {
     );
   };
 
-  // Memoize skeleton connection lines and keypoint canvas mappings
+  // Memoize skeleton connection lines and keypoint canvas mappings.
+  // getRenderedSkeletonConnections pre-filters the raw connection list to only
+  // pairs where BOTH endpoints are defined in the template's keypoints map.
+  // This is critical for couple/group/party templates that intentionally omit
+  // joints (e.g. knees, elbows) — without filtering, those limb lines are
+  // silently skipped, making the skeleton look anatomically incomplete.
   const connectionLines = useMemo(() => {
     if (canvasDimensions.width <= 0 || canvasDimensions.height <= 0 || !activePoseTemplate?.skeleton_connections) {
       return [];
     }
+    const filteredConnections = getRenderedSkeletonConnections(
+      activePoseTemplate.keypoints,
+      activePoseTemplate.skeleton_connections
+    );
     return getSkeletonConnectionLines(
       activePoseTemplate.keypoints,
-      activePoseTemplate.skeleton_connections,
+      filteredConnections,
       canvasDimensions.width,
       canvasDimensions.height
     );
