@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, AppState, AppStateStatus, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCameraStore } from '../../stores/useCameraStore';
 import { getNumericZoom, clampZoom } from '../../utils/lensCalculator';
 import { analyzeKeyframe } from '../../utils/visionInferencingEngine';
 import { useLensGuidance } from '../../hooks/useLensGuidance';
+import { usePhotoCapture } from '../../hooks/usePhotoCapture';
 import { HorizonLevelBar } from './HorizonLevelBar';
 import { ModeSwitcher } from './ModeSwitcher';
 import { VectorPoseOverlay } from './VectorPoseOverlay';
@@ -12,6 +13,7 @@ import { FramingSelector } from './FramingSelector';
 import { PoseCarousel } from './PoseCarousel';
 import { LensPresetChips } from './LensPresetChips';
 import { ShutterButton } from './ShutterButton';
+import { CaptureShutterButton } from './CaptureShutterButton';
 import { AnalyzingIndicator } from './AnalyzingIndicator';
 import { DirectorCueOverlay } from './DirectorCueOverlay';
 import { PositioningBadgesOverlay } from './PositioningBadgesOverlay';
@@ -33,6 +35,7 @@ if (Platform.OS !== 'web') {
 }
 
 export const CameraViewfinder: React.FC = () => {
+  const cameraRef = useRef<any>(null);
   const device = useSafeCameraDevice('back');
   const mode = useCameraStore((state) => state.mode);
   const isAppActive = useCameraStore((state) => state.isAppActive);
@@ -43,6 +46,18 @@ export const CameraViewfinder: React.FC = () => {
   const setIsAnalyzing = useCameraStore((state) => state.setIsAnalyzing);
   const insets = useSafeAreaInsets();
   const { onViewportLayout } = useLensGuidance();
+
+  const { isCapturing, toastMessage, captureAndSavePhoto, clearToast } = usePhotoCapture({ cameraRef });
+
+  // Auto-dismiss toast notification
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => {
+        clearToast();
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage, clearToast]);
 
   // Monitor AppState to pause camera when backgrounded (AD-2, Thermal stability)
   useEffect(() => {
@@ -106,6 +121,7 @@ export const CameraViewfinder: React.FC = () => {
     <View style={styles.container} onLayout={onViewportLayout}>
       {device && CameraComponent ? (
         <CameraComponent
+          ref={cameraRef}
           style={StyleSheet.absoluteFill}
           device={device}
           isActive={isCameraActive}
@@ -147,6 +163,13 @@ export const CameraViewfinder: React.FC = () => {
       {/* Composition Guidance HUD Overlay (Story 5.3) */}
       <CompositionGuidanceOverlay />
 
+      {/* Toast Banner for Photo Capture Notifications */}
+      {toastMessage && (
+        <View style={styles.toastBanner} pointerEvents="none">
+          <Text style={styles.toastBannerText}>{toastMessage}</Text>
+        </View>
+      )}
+
       {/* Top HUD Overlay - Mode Switcher */}
       <View style={[styles.topHudContainer, { top: topOffset }]} pointerEvents="box-none">
         <ModeSwitcher />
@@ -155,7 +178,7 @@ export const CameraViewfinder: React.FC = () => {
       {/* Center HUD Overlay - Horizon Leveling Bar */}
       <HorizonLevelBar />
 
-      {/* Bottom HUD Overlay - Framing Selector, Pose Carousel, Grid Toggle, Lens Preset Chips & Shutter Button */}
+      {/* Bottom HUD Overlay - Framing Selector, Pose Carousel, Grid Toggle, Lens Preset Chips & Shutter Controls */}
       <View style={[styles.bottomHudContainer, { bottom: bottomOffset }]} pointerEvents="box-none">
         {mode === 'person' && (
           <View style={styles.personHudLayer}>
@@ -165,8 +188,19 @@ export const CameraViewfinder: React.FC = () => {
         )}
         {mode === 'scene' && <GridModeToggle />}
         <LensPresetChips />
-        <View style={styles.shutterContainer}>
-          <ShutterButton />
+
+        {/* Dual Shutter Control Row */}
+        <View style={styles.shutterRow}>
+          <View style={styles.secondaryShutterSlot}>
+            <ShutterButton />
+          </View>
+          <View style={styles.primaryShutterSlot}>
+            <CaptureShutterButton
+              isCapturing={isCapturing}
+              onPress={captureAndSavePhoto}
+            />
+          </View>
+          <View style={styles.secondaryShutterSlot} />
         </View>
       </View>
     </View>
@@ -224,8 +258,45 @@ const styles = StyleSheet.create({
   simulatorBadgeTextFrozen: {
     color: '#00E5FF',
   },
-  shutterContainer: {
-    marginTop: 16,
+  shutterRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: 24,
+    marginTop: 16,
+  },
+  primaryShutterSlot: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 24,
+  },
+  secondaryShutterSlot: {
+    width: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toastBanner: {
+    position: 'absolute',
+    top: 100,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    borderColor: '#30D158',
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    zIndex: 50,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  toastBannerText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 });

@@ -1,6 +1,20 @@
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { useCameraStore } from '../../stores/useCameraStore';
+
+let StyleSheet: any, View: any, Text: any, TouchableOpacity: any;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const RN = require('react-native');
+  StyleSheet = RN.StyleSheet;
+  View = RN.View;
+  Text = RN.Text;
+  TouchableOpacity = RN.TouchableOpacity;
+} catch {
+  StyleSheet = { create: (s: any) => s };
+  View = 'div';
+  Text = 'span';
+  TouchableOpacity = 'button';
+}
 
 interface ShutterButtonProps {
   onPress?: () => void;
@@ -19,43 +33,58 @@ export const ShutterButton: React.FC<ShutterButtonProps> = ({ onPress }) => {
 
   return (
     <TouchableOpacity
-      style={styles.outerRing}
+      style={[styles.outerRing, isFrozen && styles.outerRingFrozen]}
       onPress={handlePress}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel="Analyze and freeze keyframe"
-      accessibilityHint={isFrozen ? "Tap to unfreeze camera feed" : "Tap to freeze frame for analysis"}
+      accessibilityLabel="AI Keyframe Freeze & Analyze"
+      accessibilityHint={isFrozen ? "Tap to unfreeze camera feed" : "Tap to freeze frame for AI composition analysis"}
       accessibilityState={{ selected: isFrozen }}
     >
-      <View style={[styles.innerCircle, isFrozen && styles.innerCircleFrozen]} />
+      <View style={[styles.innerCircle, isFrozen && styles.innerCircleFrozen]}>
+        <Text style={styles.badgeText}>{isFrozen ? 'UNFREEZE' : 'AI FREEZE'}</Text>
+      </View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   outerRing: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 4,
-    borderColor: '#FFFFFF',
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 2,
+    borderColor: '#00E5FF',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    shadowColor: '#000000',
+    backgroundColor: 'rgba(0, 229, 255, 0.15)',
+    shadowColor: '#00E5FF',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 3,
+  },
+  outerRingFrozen: {
+    borderColor: '#FFD60A',
+    backgroundColor: 'rgba(255, 214, 10, 0.2)',
+    shadowColor: '#FFD60A',
   },
   innerCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FFFFFF',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 229, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   innerCircleFrozen: {
-    backgroundColor: '#00E5FF',
-    transform: [{ scale: 0.9 }],
+    backgroundColor: '#FFD60A',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
 });
