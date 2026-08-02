@@ -41,6 +41,37 @@ export interface SubjectDetection {
   confidence: number;
 }
 
+export type LineType = 'horizon' | 'vertical' | 'diagonal';
+
+export type StructuralLabel = 'doorway' | 'window' | 'arch' | 'frame' | 'structure';
+
+export interface LineSegment {
+  start: Point2D;
+  end: Point2D;
+  angleDeg: number;
+  length: number;
+  confidence: number;
+  type: LineType;
+}
+
+export interface BackgroundBoundingBox {
+  id: string;
+  label: StructuralLabel;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  confidence: number;
+}
+
+export interface SpatialLayoutResult {
+  lines: LineSegment[];
+  boundingBoxes: BackgroundBoundingBox[];
+  horizonLine?: LineSegment;
+  vanishingPoint?: Point2D;
+  extractionLatencyMs: number;
+}
+
 export interface KeyframeVisionResult {
   timestamp: number;
   subjectCount: SubjectCount;
@@ -51,4 +82,6 @@ export interface KeyframeVisionResult {
   /** Lighting quality score [0–1]: 0 = dark/unusable, 1 = well-lit. Distinct from
    *  confidenceScore (vision inference confidence). Used by exposure guidance logic. */
   lightingConfidence?: number;
+  /** Background structural lines, horizon, vanishing point, and openings (Story 5.1). */
+  spatialLayout?: SpatialLayoutResult;
 }

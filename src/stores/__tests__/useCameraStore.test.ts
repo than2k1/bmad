@@ -75,11 +75,23 @@ export function runCameraStoreTests() {
       confidence: 0.94,
     }],
     confidenceScore: 0.94,
+    spatialLayout: {
+      lines: [
+        { start: { x: 0, y: 240 }, end: { x: 640, y: 240 }, angleDeg: 0, length: 640, confidence: 0.9, type: 'horizon' },
+      ],
+      boundingBoxes: [
+        { id: 'bbox-1', label: 'doorway', x: 100, y: 50, width: 200, height: 350, confidence: 0.88 },
+      ],
+      horizonLine: { start: { x: 0, y: 240 }, end: { x: 640, y: 240 }, angleDeg: 0, length: 640, confidence: 0.9, type: 'horizon' },
+      extractionLatencyMs: 12,
+    },
   };
 
   store.setVisionResult(dummyResult, 64);
   let state = useCameraStore.getState();
   assert(state.visionResult !== null, 'setVisionResult failed to set visionResult');
+  assert(state.visionResult?.spatialLayout !== undefined, 'setVisionResult failed to store spatialLayout');
+  assert(state.visionResult?.spatialLayout?.boundingBoxes.length === 1, 'spatialLayout boundingBoxes failed');
   assert(state.inferenceLatencyMs === 64, 'setVisionResult failed to set inferenceLatencyMs');
 
   // Test clearVisionResult

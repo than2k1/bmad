@@ -268,6 +268,9 @@ export async function runVisionEngineTests() {
   assert(result.confidenceScore > 0.5, 'Confidence score should be > 0.5');
   assert(typeof result.lightingConfidence === 'number', 'lightingConfidence should be populated');
   assert(result.lightingConfidence! >= 0 && result.lightingConfidence! <= 1, 'lightingConfidence should be in [0, 1]');
+  assert(result.spatialLayout !== undefined, 'spatialLayout should be populated in KeyframeVisionResult');
+  assert(Array.isArray(result.spatialLayout?.lines), 'spatialLayout.lines should be an array');
+  assert(result.spatialLayout!.lines.length > 0, 'spatialLayout.lines should contain detected or synthetic lines');
 
 
   console.log(`✅ All visionInferencingEngine unit tests passed successfully! (Cached Latency: ${outcome.latencyMs}ms, total test duration: ${totalTestDuration.toFixed(1)}ms)`);

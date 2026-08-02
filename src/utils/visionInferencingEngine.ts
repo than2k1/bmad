@@ -1,4 +1,5 @@
 import { KeyframeVisionResult, COCO17Keypoints, SubjectBoundingBox, SubjectDetection, SubjectCount, SceneType } from '../types/vision';
+import { extractSpatialLayout } from './spatialLayoutExtractor';
 
 export interface VisionAnalysisOutcome {
   result: KeyframeVisionResult;
@@ -535,6 +536,8 @@ export async function analyzeKeyframe(
 
   const confidenceScore = subjects.reduce((max, s) => Math.max(max, s.confidence), 0);
 
+  const spatialLayout = extractSpatialLayout(options.inputWidth, options.inputHeight);
+
   const result: KeyframeVisionResult = {
     timestamp: Date.now(),
     subjectCount,
@@ -542,6 +545,7 @@ export async function analyzeKeyframe(
     subjects,
     confidenceScore,
     lightingConfidence,
+    spatialLayout,
   };
 
 

@@ -42,3 +42,9 @@ Reviewed uncommitted changes to `visionInferencingEngine.ts`, `recommendationEng
 ### Dismissed (6)
 
 Crashes if `subjects` contains null/undefined entries (TypeScript prevents) · sort comparator NaN with NaN confidences (cascading from P4) · zero-area boxes produce IoU=0 (degenerate; only triggers on already-corrupt data) · O(n²) NMS performance (no measured regression; acceptable for current scale) · `sceneCompositionEngine.test.ts` "pre-existing" claim loose (doc accuracy, not code defect) · tie on confidence AND area ambiguity (documented first-wins behavior, design choice).
+
+## Deferred from: code review of 5-1-background-line-bounding-box-spatial-layout-extractor (2026-08-01)
+
+- **Coarse single-pair vertical bounding box aggregation merges distant structural lines** [`src/utils/spatialLayoutExtractor.ts:138-179`]: When multiple vertical lines exist, the aggregator picks the extreme leftmost and rightmost vertical lines, producing a single bounding box spanning the whole canvas. Deferred — heuristic limitation; refine in Story 5.2/5.3 as needed.
+- **`arch` and `frame` labels defined in `StructuralLabel` type are unused in default aggregator logic** [`src/utils/spatialLayoutExtractor.ts:160-165`]: Aggregator emits only `'doorway'`, `'window'`, or `'structure'`. Deferred — placeholder type definitions for future curve/arch detection algorithms.
+
