@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, LayoutChangeEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Line, Circle } from 'react-native-svg';
 import { useCameraStore } from '../../stores/useCameraStore';
 import {
@@ -13,6 +14,7 @@ export const CompositionGridOverlay: React.FC = () => {
   const gridMode = useCameraStore((state) => state.gridMode);
   const isFrozen = useCameraStore((state) => state.isFrozen);
   const visionResult = useCameraStore((state) => state.visionResult);
+  const insets = useSafeAreaInsets();
 
   const [layoutDimensions, setLayoutDimensions] = useState<{ width: number; height: number }>({
     width: 0,
@@ -45,6 +47,8 @@ export const CompositionGridOverlay: React.FC = () => {
     isFrozen && visionResult?.sceneType != null
       ? evaluateSceneGuidanceBadge(visionResult.sceneType)
       : null;
+
+  const badgeTopOffset = Math.max(insets.top + 10, 54) + 88;
 
   return (
     <View style={styles.container} pointerEvents="box-none" onLayout={handleLayout}>
@@ -92,7 +96,7 @@ export const CompositionGridOverlay: React.FC = () => {
 
       {/* Floating Scene Guidance Badge Chip (when frozen & vision result present) */}
       {sceneBadge && (
-        <View style={styles.badgeWrapper} pointerEvents="none">
+        <View style={[styles.badgeWrapper, { top: badgeTopOffset }]} pointerEvents="none">
           <View style={[styles.badgeChip, { borderColor: sceneBadge.accentColor }]}>
             <Text style={styles.badgeIcon}>🏞️</Text>
             <Text style={[styles.badgeText, { color: sceneBadge.accentColor }]}>
@@ -112,7 +116,6 @@ const styles = StyleSheet.create({
   },
   badgeWrapper: {
     position: 'absolute',
-    top: 140,
     left: 0,
     right: 0,
     alignItems: 'center',

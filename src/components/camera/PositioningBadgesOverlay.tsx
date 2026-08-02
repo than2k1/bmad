@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DeviceMotion } from 'expo-sensors';
 import { useCameraStore } from '../../stores/useCameraStore';
 import { evaluateCameraPositioning } from '../../utils/positioningEngine';
@@ -8,6 +9,7 @@ export const PositioningBadgesOverlay: React.FC = () => {
   const isFrozen = useCameraStore((state) => state.isFrozen);
   const visionResult = useCameraStore((state) => state.visionResult);
   const selectedFraming = useCameraStore((state) => state.selectedFraming);
+  const insets = useSafeAreaInsets();
   const [pitchDegrees, setPitchDegrees] = useState<number>(0);
 
   useEffect(() => {
@@ -60,8 +62,10 @@ export const PositioningBadgesOverlay: React.FC = () => {
   const isHeightGood = heightAndTilt.heightDirective === 'optimal';
   const isTiltGood = heightAndTilt.tiltDirective === 'level';
 
+  const topOffset = Math.max(insets.top + 10, 54) + 48;
+
   return (
-    <View style={styles.overlayContainer} pointerEvents="box-none">
+    <View style={[styles.overlayContainer, { top: topOffset }]} pointerEvents="box-none">
       <View style={styles.badgeStack}>
         {/* Distance Badge Chip */}
         <View style={[styles.badgeChip, styles.distanceChip, isDistanceGood && styles.optimalChip]}>
@@ -96,7 +100,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 100,
     zIndex: 25,
     alignItems: 'center',
   },

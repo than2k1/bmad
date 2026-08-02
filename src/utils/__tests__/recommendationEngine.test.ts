@@ -42,6 +42,10 @@ console.log('Running recommendationEngine unit tests...');
   assert(headshotLensRes.recommendedLens === '3x', 'Headshot framing should recommend 3x lens');
   assert(headshotLensRes.lensReason !== null, 'Headshot framing should provide reason');
 
+  const headshot3xRes = evaluateLensRecommendation(null, 'headshot', '3x');
+  assert(headshot3xRes.recommendedLens === null, 'Headshot framing on active 3x lens should return null recommendedLens');
+  assert(headshot3xRes.lensReason === null, 'Headshot framing on active 3x lens should return null lensReason');
+
   const expRes = evaluateExposureGuidance(null);
   assert(expRes === null, 'Null visionResult should return null exposure guidance');
 

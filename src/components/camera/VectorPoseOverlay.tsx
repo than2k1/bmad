@@ -7,6 +7,7 @@ import {
   PanResponder,
   LayoutChangeEvent,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Line, Circle, G } from 'react-native-svg';
 import { useCameraStore } from '../../stores/useCameraStore';
 import { POSE_CATALOG } from '../../data/poseCatalog';
@@ -22,6 +23,7 @@ export const VectorPoseOverlay: React.FC = () => {
   const selectedPoseId = useCameraStore((state) => state.selectedPoseId);
   const setSelectedPoseId = useCameraStore((state) => state.setSelectedPoseId);
   const mode = useCameraStore((state) => state.mode);
+  const insets = useSafeAreaInsets();
 
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
   const [transform, setTransform] = useState<PoseTransform>(DEFAULT_TRANSFORM);
@@ -161,6 +163,7 @@ export const VectorPoseOverlay: React.FC = () => {
   }
 
   const { width, height } = canvasDimensions;
+  const hudTopOffset = Math.max(insets.top + 10, 54) + 48;
 
   return (
     <View style={styles.overlayContainer} onLayout={handleLayout} pointerEvents="box-none">
@@ -208,7 +211,7 @@ export const VectorPoseOverlay: React.FC = () => {
       </View>
 
       {/* Floating HUD Controls for Gesture Adjustment & Dismiss */}
-      <View style={styles.hudControlsRow} pointerEvents="auto">
+      <View style={[styles.hudControlsRow, { top: hudTopOffset }]} pointerEvents="auto">
         <View style={styles.badgeContainer}>
           <Text style={styles.badgeText} numberOfLines={1}>
             {activePoseTemplate.title} ({transform.scale.toFixed(1)}x)
@@ -249,7 +252,6 @@ const styles = StyleSheet.create({
   },
   hudControlsRow: {
     position: 'absolute',
-    top: 100,
     right: 16,
     flexDirection: 'row',
     alignItems: 'center',

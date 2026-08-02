@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCameraStore } from '../../stores/useCameraStore';
 import { POSE_CATALOG } from '../../data/poseCatalog';
 import { comparePoseToTemplate } from '../../utils/directorCueEngine';
@@ -10,6 +11,7 @@ export const DirectorCueOverlay: React.FC = () => {
   const isFrozen = useCameraStore((state) => state.isFrozen);
   const selectedPoseId = useCameraStore((state) => state.selectedPoseId);
   const visionResult = useCameraStore((state) => state.visionResult);
+  const insets = useSafeAreaInsets();
 
   const primarySubject = visionResult ? getPrimarySubject(visionResult) : null;
 
@@ -33,9 +35,10 @@ export const DirectorCueOverlay: React.FC = () => {
 
   const isGreen = comparison.isGreenBadge;
   const badgeColor = isGreen ? '#30D158' : '#FF9F0A';
+  const topOffset = Math.max(insets.top + 10, 54) + 48;
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={[styles.container, { top: topOffset }]} pointerEvents="box-none">
       <View style={styles.card} pointerEvents="none">
         <View style={[styles.badge, { backgroundColor: badgeColor }]}>
           <Text style={styles.badgeText}>{comparison.alignmentScore}% MATCH</Text>
@@ -52,7 +55,6 @@ export const DirectorCueOverlay: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 70,
     left: 16,
     right: 16,
     alignItems: 'center',

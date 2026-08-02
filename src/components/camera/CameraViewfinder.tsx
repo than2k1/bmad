@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCameraStore } from '../../stores/useCameraStore';
 import { getNumericZoom, clampZoom } from '../../utils/lensCalculator';
 import { analyzeKeyframe } from '../../utils/visionInferencingEngine';
+import { useLensGuidance } from '../../hooks/useLensGuidance';
 import { HorizonLevelBar } from './HorizonLevelBar';
 import { ModeSwitcher } from './ModeSwitcher';
 import { VectorPoseOverlay } from './VectorPoseOverlay';
@@ -40,6 +41,7 @@ export const CameraViewfinder: React.FC = () => {
   const setVisionResult = useCameraStore((state) => state.setVisionResult);
   const setIsAnalyzing = useCameraStore((state) => state.setIsAnalyzing);
   const insets = useSafeAreaInsets();
+  const { onViewportLayout } = useLensGuidance();
 
   // Monitor AppState to pause camera when backgrounded (AD-2, Thermal stability)
   useEffect(() => {
@@ -100,7 +102,7 @@ export const CameraViewfinder: React.FC = () => {
   const isCameraActive = isAppActive && !isFrozen;
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={onViewportLayout}>
       {device && CameraComponent ? (
         <CameraComponent
           style={StyleSheet.absoluteFill}

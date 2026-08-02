@@ -30,10 +30,13 @@ export function evaluateLensRecommendation(
 
   const isPortraitCrop = selectedFraming === 'headshot' || selectedFraming === 'half_body';
   const primaryBbox = getPrimarySubject(visionResult)?.boundingBox ?? null;
-  const hasSubstantialSubjectHeight =
-    primaryBbox != null &&
-    viewportHeight > 0 &&
-    primaryBbox.height / viewportHeight > 0.35;
+  const heightRatio =
+    primaryBbox != null && viewportHeight > 0
+      ? primaryBbox.height <= 1.0
+        ? primaryBbox.height
+        : primaryBbox.height / viewportHeight
+      : 0;
+  const hasSubstantialSubjectHeight = heightRatio > 0.35;
 
   if (isPortraitCrop || hasSubstantialSubjectHeight) {
     return {
@@ -70,10 +73,13 @@ export function evaluateExposureGuidance(
 
   // Backlight signal 2: subject bounding box near top of frame (bright sky behind subject)
   const backlitBbox = getPrimarySubject(visionResult)?.boundingBox ?? null;
-  const isBacklitByPosition =
-    backlitBbox != null &&
-    viewportHeight > 0 &&
-    backlitBbox.y / viewportHeight < 0.3;
+  const yRatio =
+    backlitBbox != null && viewportHeight > 0
+      ? backlitBbox.y <= 1.0
+        ? backlitBbox.y
+        : backlitBbox.y / viewportHeight
+      : 1.0;
+  const isBacklitByPosition = backlitBbox != null && yRatio < 0.3;
 
   if (isBacklitScene || isBacklitByPosition) {
     return '+0.7 EV (Backlit Scene Detected)';
