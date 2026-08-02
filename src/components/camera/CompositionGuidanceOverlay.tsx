@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, LayoutChangeEvent } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, LayoutChangeEvent, Animated, Vibration } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Line, Rect, Circle, G } from 'react-native-svg';
 import { useCameraStore } from '../../stores/useCameraStore';
@@ -16,6 +16,10 @@ export const CompositionGuidanceOverlay: React.FC = () => {
     height: 0,
   });
 
+  // Animated value for the green border flash on satisfaction
+  const borderOpacity = useRef(new Animated.Value(0)).current;
+  const prevSatisfied = useRef(false);
+
   const handleLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     if (width !== layoutDimensions.width || height !== layoutDimensions.height) {
@@ -25,6 +29,24 @@ export const CompositionGuidanceOverlay: React.FC = () => {
 
   const overlayState = evaluateGuidanceOverlayState({ isFrozen, visionResult });
 
+  const isSatisfied = overlayState?.isSatisfied ?? false;
+
+  // Trigger border flash + vibration exactly once when transitioning to satisfied
+  useEffect(() => {
+    if (isSatisfied && !prevSatisfied.current) {
+      // Brief haptic pulse — silently no-ops on web
+      Vibration.vibrate(80);
+      // Animate border: fade in fast, hold briefly, fade out
+      borderOpacity.setValue(0);
+      Animated.sequence([
+        Animated.timing(borderOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+        Animated.delay(500),
+        Animated.timing(borderOpacity, { toValue: 0, duration: 550, useNativeDriver: true }),
+      ]).start();
+    }
+    prevSatisfied.current = isSatisfied;
+  }, [isSatisfied, borderOpacity]);
+
   if (!overlayState) {
     return null;
   }
@@ -32,7 +54,6 @@ export const CompositionGuidanceOverlay: React.FC = () => {
   const {
     activeRule,
     score,
-    isSatisfied,
     textCue,
     guideLines,
     directionalBadges,
@@ -42,7 +63,9 @@ export const CompositionGuidanceOverlay: React.FC = () => {
   } = overlayState;
 
   const { width, height } = layoutDimensions;
-  const topOffset = Math.max(insets.top + 10, 54) + 96;
+  // Position below both PositioningBadgesOverlay (+48) and DirectorCueOverlay (+160)
+  // so the composition banner has its own clear mid-zone with no overlap.
+  const topOffset = Math.max(insets.top + 10, 54) + 220;
 
   // Power points for Rule of Thirds
   const powerPoints: Point2D[] =
@@ -180,30 +203,38 @@ export const CompositionGuidanceOverlay: React.FC = () => {
         </Svg>
       )}
 
-      {/* Top Banner HUD Overlay - Status, Score, & Text Cue */}
-      <View style={[styles.bannerWrapper, { top: topOffset }]} pointerEvents="none">
-        <View style={[styles.bannerCard, { borderColor: statusColor }]}>
-          <View style={styles.bannerHeader}>
-            <View style={[styles.scoreBadge, { backgroundColor: statusColor }]}>
-              <Text style={styles.scoreText}>{score}%</Text>
+      {/* Animated Green Border Flash — shown only when composition is satisfied */}
+      <Animated.View
+        style={[styles.satisfiedBorder, { opacity: borderOpacity }]}
+        pointerEvents="none"
+      />
+
+      {/* Banner HUD — shown only while alignment is still in progress */}
+      {!isSatisfied && (
+        <View style={[styles.bannerWrapper, { top: topOffset }]} pointerEvents="none">
+          <View style={[styles.bannerCard, { borderColor: statusColor }]}>
+            <View style={styles.bannerHeader}>
+              <View style={[styles.scoreBadge, { backgroundColor: statusColor }]}>
+                <Text style={styles.scoreText}>{score}%</Text>
+              </View>
+              <Text style={[styles.statusTitle, { color: statusColor }]}>{statusText}</Text>
             </View>
-            <Text style={[styles.statusTitle, { color: statusColor }]}>{statusText}</Text>
+
+            <Text style={styles.textCue}>{textCue}</Text>
+
+            {/* Directional Badges Stack */}
+            {directionalBadges.length > 0 && (
+              <View style={styles.badgeRow}>
+                {directionalBadges.map((badgeText, idx) => (
+                  <View key={`badge-${idx}`} style={styles.directionalBadgeChip}>
+                    <Text style={styles.directionalBadgeText}>{badgeText}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
-
-          <Text style={styles.textCue}>{textCue}</Text>
-
-          {/* Directional Badges Stack */}
-          {directionalBadges.length > 0 && (
-            <View style={styles.badgeRow}>
-              {directionalBadges.map((badgeText, idx) => (
-                <View key={`badge-${idx}`} style={styles.directionalBadgeChip}>
-                  <Text style={styles.directionalBadgeText}>{badgeText}</Text>
-                </View>
-              ))}
-            </View>
-          )}
         </View>
-      </View>
+      )}
     </View>
   );
 };
@@ -212,6 +243,14 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 22,
+  },
+  // Green border outline that flashes briefly on composition satisfaction
+  satisfiedBorder: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 3,
+    borderColor: '#30D158',
+    borderRadius: 10,
+    pointerEvents: 'none',
   },
   bannerWrapper: {
     position: 'absolute',

@@ -163,9 +163,9 @@ export const CameraViewfinder: React.FC = () => {
       {/* Composition Guidance HUD Overlay (Story 5.3) */}
       <CompositionGuidanceOverlay />
 
-      {/* Toast Banner for Photo Capture Notifications */}
+      {/* Toast Banner for Photo Capture Notifications — sits just above PositioningBadges */}
       {toastMessage && (
-        <View style={styles.toastBanner} pointerEvents="none">
+        <View style={[styles.toastBanner, { top: topOffset + 44 }]} pointerEvents="none">
           <Text style={styles.toastBannerText}>{toastMessage}</Text>
         </View>
       )}
@@ -278,7 +278,6 @@ const styles = StyleSheet.create({
   },
   toastBanner: {
     position: 'absolute',
-    top: 100,
     alignSelf: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.85)',
     borderColor: '#30D158',

@@ -48,7 +48,10 @@ export const CompositionGridOverlay: React.FC = () => {
       ? evaluateSceneGuidanceBadge(visionResult.sceneType)
       : null;
 
-  const badgeTopOffset = Math.max(insets.top + 10, 54) + 88;
+  // Anchor badge above the entire bottom HUD stack.
+  // Scene mode bottom HUD: GridModeToggle (~36px) + LensPresetChips (~40px)
+  // + shutterRow (~86px) + margins ≈ 220px. +240 clears it with room to spare.
+  const badgeBottomOffset = Math.max(insets.bottom + 16, 40) + 240;
 
   return (
     <View style={styles.container} pointerEvents="box-none" onLayout={handleLayout}>
@@ -94,9 +97,9 @@ export const CompositionGridOverlay: React.FC = () => {
         </Svg>
       )}
 
-      {/* Floating Scene Guidance Badge Chip (when frozen & vision result present) */}
+      {/* Floating Scene Guidance Badge Chip — bottom-center, clear of top overlays */}
       {sceneBadge && (
-        <View style={[styles.badgeWrapper, { top: badgeTopOffset }]} pointerEvents="none">
+        <View style={[styles.badgeWrapper, { bottom: badgeBottomOffset }]} pointerEvents="none">
           <View style={[styles.badgeChip, { borderColor: sceneBadge.accentColor }]}>
             <Text style={styles.badgeIcon}>🏞️</Text>
             <Text style={[styles.badgeText, { color: sceneBadge.accentColor }]}>
@@ -119,6 +122,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+    // bottom is set inline so badge floats above bottom HUD
   },
   badgeChip: {
     flexDirection: 'row',

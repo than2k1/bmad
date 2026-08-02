@@ -45,38 +45,48 @@ export const AnalyzingIndicator: React.FC = () => {
     };
   });
 
+  // Completed state: compact top-left corner badge — out of the way
+  const cornerBadge = !isAnalyzing && visionResult && inferenceLatencyMs !== null;
+
+  // Nothing to show when not frozen and not actively analyzing
   if (!isFrozen && !isAnalyzing) {
     return null;
   }
 
   return (
     <Pressable
-      style={styles.overlay}
+      style={[styles.overlay, !cornerBadge && { backgroundColor: 'rgba(0, 0, 0, 0.15)' }]}
       onPress={toggleFreeze}
       accessibilityRole="button"
       accessibilityLabel="Unfreeze keyframe and resume live camera feed"
       accessibilityHint="Tapping anywhere on screen un-freezes the camera preview"
     >
-      <Animated.View style={[styles.hudContainer, animatedPillStyle]}>
-        <View style={[styles.pill, visionResult && styles.pillComplete]}>
-          {isAnalyzing ? (
-            <>
-              <ActivityIndicator size="small" color="#00E5FF" style={styles.spinner} />
-              <Text style={styles.text}>Analyzing Keyframe...</Text>
-            </>
-          ) : visionResult && inferenceLatencyMs !== null ? (
-            <>
-              <View style={styles.completeDot} />
-              <Text style={styles.completeText}>
-                Analyzed in {inferenceLatencyMs}ms ({visionResult.subjectCount.toUpperCase()} • {visionResult.sceneType.toUpperCase()})
-              </Text>
-            </>
-          ) : (
-            <Text style={styles.text}>Keyframe Frozen</Text>
-          )}
-        </View>
-        <Text style={styles.hintText}>Tap anywhere to resume live view</Text>
-      </Animated.View>
+      {/* Centered spinner/frozen state — only while actively analyzing or just frozen */}
+      {(isAnalyzing || (!visionResult)) && (
+        <Animated.View style={[styles.hudContainer, animatedPillStyle]}>
+          <View style={[styles.pill, visionResult && styles.pillComplete]}>
+            {isAnalyzing ? (
+              <>
+                <ActivityIndicator size="small" color="#00E5FF" style={styles.spinner} />
+                <Text style={styles.text}>Analyzing Keyframe...</Text>
+              </>
+            ) : (
+              <Text style={styles.text}>Keyframe Frozen</Text>
+            )}
+          </View>
+          <Text style={styles.hintText}>Tap anywhere to resume live view</Text>
+        </Animated.View>
+      )}
+
+      {/* Compact top-left corner badge once analysis is complete */}
+      {cornerBadge && (
+        <Animated.View style={[styles.cornerBadge, animatedPillStyle]} pointerEvents="none">
+          <View style={styles.completeDot} />
+          <Text style={styles.cornerText}>
+            {inferenceLatencyMs}ms • {visionResult!.subjectCount.toUpperCase()} • {visionResult!.sceneType.toUpperCase()}
+          </Text>
+        </Animated.View>
+      )}
     </Pressable>
   );
 };
@@ -84,7 +94,8 @@ export const AnalyzingIndicator: React.FC = () => {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    // Only dim the background when actively analyzing or frozen without result
+    // (corner badge mode keeps viewfinder fully visible)
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 15,
@@ -144,5 +155,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
     overflow: 'hidden',
+  },
+  cornerBadge: {
+    position: 'absolute',
+    top: 18,
+    left: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.82)',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(52, 199, 89, 0.45)',
+    shadowColor: '#34C759',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  cornerText: {
+    color: '#34C759',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
 });

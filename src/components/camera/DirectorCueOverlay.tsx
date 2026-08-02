@@ -13,17 +13,15 @@ export const DirectorCueOverlay: React.FC = () => {
   const visionResult = useCameraStore((state) => state.visionResult);
   const insets = useSafeAreaInsets();
 
-  const primarySubject = visionResult ? getPrimarySubject(visionResult) : null;
-
-  if (mode !== 'person' || !isFrozen || !selectedPoseId || !primarySubject) {
-    return null;
-  }
-
+  // useMemo must be called unconditionally before any early returns (Rules of Hooks)
   const activeTemplate = React.useMemo(
     () => POSE_CATALOG.find((p) => p.id === selectedPoseId),
     [selectedPoseId]
   );
-  if (!activeTemplate) {
+
+  const primarySubject = visionResult ? getPrimarySubject(visionResult) : null;
+
+  if (mode !== 'person' || !isFrozen || !selectedPoseId || !primarySubject || !activeTemplate) {
     return null;
   }
 
@@ -35,7 +33,9 @@ export const DirectorCueOverlay: React.FC = () => {
 
   const isGreen = comparison.isGreenBadge;
   const badgeColor = isGreen ? '#30D158' : '#FF9F0A';
-  const topOffset = Math.max(insets.top + 10, 54) + 48;
+  // Sit below PositioningBadgesOverlay (which occupies ~54+48 = ~102px zone)
+  // Add enough gap for 3 stacked badge chips (~96px at 6px gap each) → +160
+  const topOffset = Math.max(insets.top + 10, 54) + 160;
 
   return (
     <View style={[styles.container, { top: topOffset }]} pointerEvents="box-none">

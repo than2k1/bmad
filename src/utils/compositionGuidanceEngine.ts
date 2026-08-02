@@ -48,7 +48,7 @@ export function evaluateGuidanceOverlayState(state: {
     ? '#00E5FF'
     : '#FFD60A';
   const statusText = result.isSatisfied
-    ? 'COMPOSITION SATISFIED (85%+)'
+    ? 'COMPOSITION SATISFIED'
     : 'ALIGNMENT IN PROGRESS';
 
   return {

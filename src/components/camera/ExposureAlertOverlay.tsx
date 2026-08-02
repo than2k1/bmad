@@ -28,8 +28,9 @@ export const ExposureAlertOverlay: React.FC = () => {
     return null;
   }
 
-  // Safe-area aware top offset: sit below the top HUD (mode switcher at insets.top + 10)
-  // with an additional 48px gap so the overlay doesn't collide with the ModeSwitcher chip.
+  // Anchor to right side of screen at the same upper zone as PositioningBadges.
+  // Right-aligning separates it horizontally from the center-stacked badges
+  // so both are visible without vertical stacking conflicts.
   const topOffset = Math.max(insets.top + 10, 54) + 48;
 
   return (
@@ -66,9 +67,9 @@ export const ExposureAlertOverlay: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    alignItems: 'center',
+    right: 12,
+    left: 12,
+    alignItems: 'flex-end',
     zIndex: 26,
     gap: 8,
   },
