@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "scheme": "posecam",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -13,8 +14,14 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.posecam.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "Camera access is required for real-time viewfinder framing and AI pose suggestions."
+        "NSCameraUsageDescription": "PoseCam uses the camera to provide real-time AI-powered pose guidance and composition framing assistance.",
+        "NSPhotoLibraryUsageDescription": "PoseCam saves captured photos to your photo library.",
+        "NSPhotoLibraryAddUsageDescription": "PoseCam saves captured photos to your photo library.",
+        "NSMotionUsageDescription": "PoseCam uses device motion to display a real-time horizon level indicator.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -22,20 +29,41 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
+      "package": "com.posecam.app",
+      "versionCode": 1,
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "plugins": [
       [
         "react-native-vision-camera",
         {
-          "cameraPermissionText": "Camera access is required for real-time viewfinder framing and AI pose suggestions."
+          "cameraPermissionText": "PoseCam uses the camera to provide real-time AI-powered pose guidance and composition framing assistance.",
+          "enableFrameProcessors": false
         }
-      ]
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "PoseCam saves captured photos to your photo library.",
+          "savePhotosPermission": "PoseCam saves captured photos to your photo library.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      "expo-sensors"
     ],
     "web": {
       "bundler": "metro"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bd9fb935-6d03-4225-ad3d-ccbf4594179f"
+      }
+    },
+    "owner": "thanpn-dev"
   }
 }
