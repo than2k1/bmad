@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-28
-last_updated: 2026-08-02 (Story 5.2 code review completed)
+last_updated: 2026-08-02 (Epic 5 retrospective completed)
 project: bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -67,11 +67,11 @@ development_status:
   4-2-1-tap-lens-recommendation-exposure-alerts: done
   4-3-scene-mode-composition-grid-overlays: done
   epic-4-retrospective: done
-  epic-5: in-progress
+  epic-5: done
   5-1-background-line-bounding-box-spatial-layout-extractor: done
   5-2-mode-driven-composition-rule-evaluator-engine: done
-  5-3-viewfinder-directional-cues-target-visual-overlay: backlog
-  epic-5-retrospective: optional
+  5-3-viewfinder-directional-cues-target-visual-overlay: done
+  epic-5-retrospective: done
 
 action_items:
   - epic: 1
@@ -138,3 +138,16 @@ action_items:
     action: "Replace Math.round() ratio assertions in sceneCompositionEngine.test.ts with precise float comparisons"
     owner: "Amelia"
     status: done
+  - epic: 5
+    action: "Evaluate edge model fine-tuning for custom ONNX/TFLite background structural bounding box detection"
+    owner: "Amelia"
+    status: open
+  - epic: 5
+    action: "Refine vertical bounding box aggregation in spatialLayoutExtractor.ts to improve overlapping structure clustering"
+    owner: "Winston"
+    status: open
+  - epic: 5
+    action: "Run bmad-document-project to update overall project documentation and system architecture docs"
+    owner: "Paige"
+    status: open
+

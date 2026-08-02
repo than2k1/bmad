@@ -17,6 +17,7 @@ import { DirectorCueOverlay } from './DirectorCueOverlay';
 import { PositioningBadgesOverlay } from './PositioningBadgesOverlay';
 import { ExposureAlertOverlay } from './ExposureAlertOverlay';
 import { CompositionGridOverlay } from './CompositionGridOverlay';
+import { CompositionGuidanceOverlay } from './CompositionGuidanceOverlay';
 import { GridModeToggle } from './GridModeToggle';
 import { useSafeCameraDevice } from '../../utils/cameraHooks';
 
@@ -142,6 +143,9 @@ export const CameraViewfinder: React.FC = () => {
 
       {/* Scene Mode Composition Grid & Guidance Overlay */}
       <CompositionGridOverlay />
+
+      {/* Composition Guidance HUD Overlay (Story 5.3) */}
+      <CompositionGuidanceOverlay />
 
       {/* Top HUD Overlay - Mode Switcher */}
       <View style={[styles.topHudContainer, { top: topOffset }]} pointerEvents="box-none">
