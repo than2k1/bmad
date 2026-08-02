@@ -1,5 +1,7 @@
 import { KeyframeVisionResult, COCO17Keypoints, SubjectBoundingBox, SubjectDetection, SubjectCount, SceneType } from '../types/vision';
 import { extractSpatialLayout } from './spatialLayoutExtractor';
+import { evaluateCompositionRules } from './compositionRuleEngine';
+import { AppMode } from '../types/camera';
 
 export interface VisionAnalysisOutcome {
   result: KeyframeVisionResult;
@@ -27,6 +29,7 @@ export interface InferenceEngineConfig {
   inputHeight?: number;
   confidenceThreshold?: number; // default 0.4
   nmsThreshold?: number; // default 0.45
+  mode?: AppMode | 'landscape';
 }
 
 const DEFAULT_CONFIG: Required<InferenceEngineConfig> = {
@@ -38,6 +41,7 @@ const DEFAULT_CONFIG: Required<InferenceEngineConfig> = {
   // group hugs, parent/child) often produce overlapping torso boxes that would
   // collapse distinct people into one detection at lower thresholds.
   nmsThreshold: 0.6,
+  mode: 'person',
 };
 
 // Singleton Session & Model Cache for Sub-20ms Inferencing
@@ -537,6 +541,14 @@ export async function analyzeKeyframe(
   const confidenceScore = subjects.reduce((max, s) => Math.max(max, s.confidence), 0);
 
   const spatialLayout = extractSpatialLayout(options.inputWidth, options.inputHeight);
+  const activeMode: AppMode | 'landscape' = options.mode || (sceneType === 'landscape' ? 'landscape' : 'person');
+  const compositionResult = evaluateCompositionRules(
+    activeMode,
+    spatialLayout,
+    subjects,
+    options.inputWidth,
+    options.inputHeight
+  );
 
   const result: KeyframeVisionResult = {
     timestamp: Date.now(),
@@ -546,6 +558,7 @@ export async function analyzeKeyframe(
     confidenceScore,
     lightingConfidence,
     spatialLayout,
+    compositionResult,
   };
 
 

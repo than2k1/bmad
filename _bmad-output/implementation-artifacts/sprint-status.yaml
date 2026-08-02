@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-28
-last_updated: 2026-08-02 (Epic 4 retro action items completed)
+last_updated: 2026-08-02 (Story 5.2 code review completed)
 project: bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -69,7 +69,7 @@ development_status:
   epic-4-retrospective: done
   epic-5: in-progress
   5-1-background-line-bounding-box-spatial-layout-extractor: done
-  5-2-mode-driven-composition-rule-evaluator-engine: backlog
+  5-2-mode-driven-composition-rule-evaluator-engine: done
   5-3-viewfinder-directional-cues-target-visual-overlay: backlog
   epic-5-retrospective: optional
 

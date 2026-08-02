@@ -1,3 +1,5 @@
+import { CompositionRuleResult } from './composition';
+
 export interface Point2D {
   x: number;
   y: number;
@@ -84,4 +86,6 @@ export interface KeyframeVisionResult {
   lightingConfidence?: number;
   /** Background structural lines, horizon, vanishing point, and openings (Story 5.1). */
   spatialLayout?: SpatialLayoutResult;
+  /** Evaluated mode-driven composition rule score and guidance cues (Story 5.2). */
+  compositionResult?: CompositionRuleResult;
 }
